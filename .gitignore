@@ -1,0 +1,55 @@
+# =========================================================
+# RhythmIN Studio - Git Ignore
+# =========================================================
+
+# Dependencies
+node_modules/
+
+# Build / generated output
+dist/
+build/
+out/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code / editor files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# Generated source maps
+*.map
+*.srcmap.json
+**/*.map
+**/*.srcmap.json
+
+# Demo/sample audio
+# Keep locally until redistribution rights are confirmed
+/assets/stems/*.wav
+
+# Locally generated audio exports
+/assets/exports/
+
+# Other generated files
+coverage/
+.cache/

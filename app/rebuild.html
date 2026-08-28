@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rebuild — RhythmIn</title>
+<link rel="stylesheet" href="../shared/rhythmin.css">
+<style>
+  .content-inner { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.02em; font-weight: 600; }
+  .page-header p { color: var(--fg-2); margin: 0; font-size: 13px; max-width: 720px; }
+
+  .rebuild-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Step cards */
+  .step-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .step-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .step-num {
+    width: 26px; height: 26px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-2);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .step-num.done { background: var(--meter-low); color: white; border-color: var(--meter-low); }
+  .step-num.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .step-header h3 { font-size: 14px; font-weight: 600; margin: 0; }
+  .step-header .desc { font-size: 12px; color: var(--fg-2); }
+
+  /* Analysis grid */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .analysis-cell {
+    padding: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+  }
+  .analysis-cell .lbl { font-size: 10px; color: var(--fg-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .analysis-cell .val { font-family: 'JetBrains Mono', monospace; font-size: 18px; margin-top: 4px; color: var(--fg-0); }
+  .analysis-cell .sub { font-size: 10px; color: var(--fg-3); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+  /* Structure viz */
+  .structure-viz {
+    margin-top: 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 16px;
+  }
+  .section-blocks {
+    display: flex;
+    gap: 4px;
+    height: 40px;
+    margin-bottom: 8px;
+  }
+  .section-block {
+    padding: 4px 10px;
+    background: var(--accent);
+    color: white;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex; align-items: center;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .section-block.intro { background: var(--fg-3); }
+  .section-block.verse { background: var(--accent-lo); }
+  .section-block.chorus { background: var(--accent); }
+  .section-block.bridge { background: var(--violet); }
+  .section-block.outro { background: var(--fg-3); }
+  .section-ruler {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--fg-3);
+  }
+
+  /* Instrument grid */
+  .instr-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .instr-card {
+    background: var(--bg-2);
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative;
+  }
+  .instr-card:hover { border-color: var(--line-strong); }
+  .instr-card.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .instr-card .head {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .instr-card .ico {
+    width: 28px; height: 28px;
+    background: var(--bg-3);
+    border-radius: 5px;
+    display: grid; place-items: center;
+    color: var(--fg-2);
+  }
+  .instr-card.selected .ico { background: var(--accent); color: white; }
+  .instr-card .ico svg { width: 14px; height: 14px; }
+  .instr-card .name { font-size: 12px; font-weight: 500; flex: 1; }
+  .instr-card .check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--fg-3);
+    border-radius: 4px;
+    display: grid; place-items: center;
+    color: white;
+  }
+  .instr-card.selected .check { background: var(--accent); border-color: var(--accent); }
+  .instr-card .check svg { width: 10px; height: 10px; opacity: 0; }
+  .instr-card.selected .check svg { opacity: 1; }
+  .instr-card .desc { font-size: 11px; color: var(--fg-3); }
+  .instr-card .role {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--fg-3);
+    padding: 2px 6px;
+    background: var(--bg-3);
+    border-radius: 3px;
+    align-self: flex-start;
+  }
+
+  /* Right sidebar: preview */
+  .preview-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    position: sticky; top: 76px;
+    overflow: hidden;
+  }
+  .pp-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pp-head h4 { font-size: 12px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .pp-body { padding: 16px; }
+
+  .pp-waveform {
+    height: 80px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    margin-bottom: 16px;
+    padding: 12px;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .pp-instr {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-bottom: 16px;
+  }
+  .pp-instr .item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .pp-instr .item .swatch { width: 8px; height: 8px; border-radius: 50%; }
+  .pp-instr .item .name { flex: 1; }
+  .pp-instr .item .status { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-3); }
+  .pp-instr .item.off { opacity: 0.4; }
+
+  .action-bar {
+    display: flex; gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  /* Copyright notice */
+  .notice-block {
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    display: flex; gap: 10px;
+    font-size: 11px;
+    color: var(--fg-2);
+    line-height: 1.5;
+    margin-top: 12px;
+  }
+  .notice-block .ico { color: var(--fg-3); flex-shrink: 0; margin-top: 1px; }
+
+  @media (max-width: 900px) {
+    .rebuild-layout { grid-template-columns: 1fr; }
+    .analysis-grid { grid-template-columns: repeat(2, 1fr); }
+    .instr-grid { grid-template-columns: repeat(2, 1fr); }
+    .preview-panel { position: relative; top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="content-inner">
+      <div class="page-header">
+        <h1>Rebuild instrumental</h1>
+        <p>Upload a reference track and RhythmIn analyzes its tempo, key, and section structure, then reconstructs an instrumental arrangement using the instruments you select. The output is an original interpretation — not a copy of the source recording.</p>
+      </div>
+
+      <div class="rebuild-layout">
+        <div>
+          <!-- STEP 1: Source -->
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-num done"><span id="s1-check"></span></div>
+              <div>
+                <h3>Source</h3>
+                <span class="desc">Reference track for analysis</span>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; padding: 12px; background:var(--bg-2); border:1px solid var(--line); border-radius:5px;">
+              <div style="width:36px; height:36px; background: var(--bg-3); border-radius:5px; display:grid; place-items:center; color:var(--accent-hi)"><span id="src-ic"></span></div>
+              <div style="flex:1">
+                <div style="font-size:13px; font-weight:500">midnight-loop.wav</div>
+                <div style="font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--fg-3); margin-top:2px">08.000s · 44.1 kHz · stereo</div>
+              </div>
+              <button class="btn ghost"><span id="src-play-ic"></span> Preview</button>
+              <button class="btn ghost">Replace</button>
+            </div>
+          </div>
+
+          <!-- STEP 2: Analysis -->
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-num done"><span id="s2-check"></span></div>
+              <div>
+                <h3>Musical analysis</h3>
+                <span class="desc">Extracted from the source recording</span>
+              </div>
+            </div>
+            <div class="analysis-grid">
+              <div class="analysis-cell">
+                <div class="lbl">Tempo</div>
+                <div class="val">120<span style="color:var(--fg-3); font-size:12px"> BPM</span></div>
+                <div class="sub">confidence 0.96</div>
+              </div>
+              <div class="analysis-cell">
+                <div class="lbl">Key</div>
+                <div class="val">C<span style="color:var(--fg-3); font-size:12px"> minor</span></div>
+                <div class="sub">confidence 0.89</div>
+              </div>
+              <div class="analysis-cell">
+                <div class="lbl">Time sig</div>
+                <div class="val">4/4</div>
+                <div class="sub">stable</div>
+              </div>
+              <div class="analysis-cell">
+                <div class="lbl">Energy</div>
+                <div class="val">0.72</div>
+                <div class="sub">medium-high</div>
+              </div>
+            </div>
+
+            <div class="structure-viz">
+              <div style="font-size:10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); font-weight: 600; margin-bottom: 10px">Section structure</div>
+              <div class="section-blocks">
+                <div class="section-block intro" style="flex: 1">Intro</div>
+                <div class="section-block verse" style="flex: 2">Verse</div>
+                <div class="section-block chorus" style="flex: 3">Chorus</div>
+                <div class="section-block verse" style="flex: 2">Verse</div>
+                <div class="section-block chorus" style="flex: 3">Chorus</div>
+                <div class="section-block bridge" style="flex: 2">Bridge</div>
+                <div class="section-block chorus" style="flex: 3">Chorus</div>
+                <div class="section-block outro" style="flex: 1">Outro</div>
+              </div>
+              <div class="section-ruler">
+                <span>0:00</span><span>0:08</span><span>0:16</span><span>0:24</span><span>0:32</span><span>0:40</span><span>0:48</span><span>0:56</span><span>1:04</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 14px; padding: 10px 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 5px; font-size: 11px; color: var(--fg-2); display: flex; gap: 12px;">
+              <div><span style="color:var(--fg-3)">Chord progression</span> <span class="mono" style="margin-left: 6px; color: var(--fg-0)">Cm — Fm — E♭maj — Gm</span></div>
+              <div style="margin-left: auto;"><span style="color:var(--fg-3)">Extracted stems</span> <span class="mono" style="margin-left: 6px; color: var(--fg-0)">4</span></div>
+            </div>
+          </div>
+
+          <!-- STEP 3: Instruments -->
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-num active"><span class="mono">03</span></div>
+              <div>
+                <h3>Instruments to generate</h3>
+                <span class="desc">Choose the instrumental layers that will appear in the rebuild</span>
+              </div>
+            </div>
+            <div class="instr-grid" id="instr-grid">
+              <div class="instr-card selected" data-instr="drums">
+                <div class="head">
+                  <div class="ico"><span id="i1"></span></div>
+                  <span class="name">Drums · Percussion</span>
+                  <div class="check"><span id="c1"></span></div>
+                </div>
+                <div class="desc">Kick, snare, hats, cymbals following extracted rhythm</div>
+                <div class="role">RHYTHMIC · REQUIRED</div>
+              </div>
+              <div class="instr-card selected" data-instr="bass">
+                <div class="head">
+                  <div class="ico"><span id="i2"></span></div>
+                  <span class="name">Bass</span>
+                  <div class="check"><span id="c2"></span></div>
+                </div>
+                <div class="desc">Root motion following detected chord progression</div>
+                <div class="role">HARMONIC · LOW</div>
+              </div>
+              <div class="instr-card selected" data-instr="keys">
+                <div class="head">
+                  <div class="ico"><span id="i3"></span></div>
+                  <span class="name">Keys · Pad</span>
+                  <div class="check"><span id="c3"></span></div>
+                </div>
+                <div class="desc">Chordal support, voicings match key signature</div>
+                <div class="role">HARMONIC · MID</div>
+              </div>
+              <div class="instr-card" data-instr="guitar">
+                <div class="head">
+                  <div class="ico"><span id="i4"></span></div>
+                  <span class="name">Guitar · Strings</span>
+                  <div class="check"><span id="c4"></span></div>
+                </div>
+                <div class="desc">Rhythm or arpeggiated texture</div>
+                <div class="role">HARMONIC · MID</div>
+              </div>
+              <div class="instr-card selected" data-instr="lead">
+                <div class="head">
+                  <div class="ico"><span id="i5"></span></div>
+                  <span class="name">Lead · Melody</span>
+                  <div class="check"><span id="c5"></span></div>
+                </div>
+                <div class="desc">Melodic line derived from source contour</div>
+                <div class="role">MELODIC · HIGH</div>
+              </div>
+              <div class="instr-card" data-instr="strings">
+                <div class="head">
+                  <div class="ico"><span id="i6"></span></div>
+                  <span class="name">Strings</span>
+                  <div class="check"><span id="c6"></span></div>
+                </div>
+                <div class="desc">Sustained ensemble pads for cinematic feel</div>
+                <div class="role">HARMONIC · WIDE</div>
+              </div>
+              <div class="instr-card" data-instr="fx">
+                <div class="head">
+                  <div class="ico"><span id="i7"></span></div>
+                  <span class="name">FX · Textures</span>
+                  <div class="check"><span id="c7"></span></div>
+                </div>
+                <div class="desc">Risers, impacts, atmospheric layers</div>
+                <div class="role">TEXTURAL</div>
+              </div>
+              <div class="instr-card" data-instr="perc">
+                <div class="head">
+                  <div class="ico"><span id="i8"></span></div>
+                  <span class="name">Percussion</span>
+                  <div class="check"><span id="c8"></span></div>
+                </div>
+                <div class="desc">Shakers, congas, additional groove elements</div>
+                <div class="role">RHYTHMIC · TOP</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 4: Style -->
+          <div class="step-card">
+            <div class="step-header">
+              <div class="step-num"><span class="mono">04</span></div>
+              <div>
+                <h3>Arrangement style</h3>
+                <span class="desc">How closely should the rebuild follow the source?</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <label class="instr-card selected" style="flex:1; cursor: pointer;">
+                <div class="head" style="justify-content: space-between">
+                  <span class="name">Faithful</span>
+                  <div class="check"><span id="mode-c1"></span></div>
+                </div>
+                <div class="desc">Preserve source structure, energy, and phrasing exactly</div>
+              </label>
+              <label class="instr-card" style="flex:1; cursor: pointer;">
+                <div class="head" style="justify-content: space-between">
+                  <span class="name">Balanced</span>
+                  <div class="check"><span id="mode-c2"></span></div>
+                </div>
+                <div class="desc">Follow structure but re-voice progressions and rhythms</div>
+              </label>
+              <label class="instr-card" style="flex:1; cursor: pointer;">
+                <div class="head" style="justify-content: space-between">
+                  <span class="name">Reinterpret</span>
+                  <div class="check"><span id="mode-c3"></span></div>
+                </div>
+                <div class="desc">Match tempo &amp; key only; freely reimagine the arrangement</div>
+              </label>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;">
+              <div>
+                <span class="label" style="display:block; margin-bottom:6px">Output length</span>
+                <select class="select" style="width:100%">
+                  <option>Match source (1:04)</option>
+                  <option>2× loop</option>
+                  <option>Custom length…</option>
+                </select>
+              </div>
+              <div>
+                <span class="label" style="display:block; margin-bottom:6px">Include vocals?</span>
+                <select class="select" style="width:100%">
+                  <option>No · instrumental / karaoke</option>
+                  <option>Guide vocal only (synthesized)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="notice-block">
+            <span class="ico" id="notice-ic-2"></span>
+            <div>
+              <strong>Original arrangement.</strong> Rebuild generates an <em>instrumental interpretation</em> based on musical features extracted from your reference — not a reproduction of the original recording. Only upload material you have the right to use as a reference.
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Preview panel -->
+        <div>
+          <div class="preview-panel">
+            <div class="pp-head">
+              <span style="color: var(--accent-hi); display: inline-flex" id="pp-ic"></span>
+              <h4>Rebuild preview</h4>
+              <span class="tag" style="margin-left: auto">estimated</span>
+            </div>
+            <div class="pp-body">
+              <div class="pp-waveform">
+                <svg viewBox="0 0 300 60" style="width:100%; height:100%">
+                  ${''}
+                  <g fill="var(--accent)" opacity="0.9">
+                  </g>
+                </svg>
+                <div id="pp-wave-svg"></div>
+              </div>
+
+              <div style="font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); font-weight: 600; margin-bottom: 8px">Layers</div>
+              <div class="pp-instr" id="pp-instr"></div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; background: var(--bg-2); border-radius: 5px; border: 1px solid var(--line); font-size: 11px;">
+                <div><span style="color:var(--fg-3)">Tempo</span> <span class="mono">120 BPM</span></div>
+                <div><span style="color:var(--fg-3)">Key</span> <span class="mono">C minor</span></div>
+                <div><span style="color:var(--fg-3)">Length</span> <span class="mono">01:04</span></div>
+                <div><span style="color:var(--fg-3)">Est. size</span> <span class="mono">~11 MB</span></div>
+              </div>
+
+              <div class="action-bar">
+                <button class="btn" style="flex: 1"><span id="preview-ic"></span> Preview</button>
+                <button class="btn primary" style="flex: 2" id="start-rebuild"><span id="rebuild-ic"></span> Start rebuild</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-panel" style="margin-top: 12px; position: static;">
+            <div class="pp-head">
+              <span style="color: var(--fg-3); display: inline-flex" id="hist-ic"></span>
+              <h4>Recent rebuilds</h4>
+            </div>
+            <div class="pp-body" style="padding-top: 0">
+              <div style="padding: 10px 0; border-bottom: 1px solid var(--line); display:flex; align-items:center; gap:10px;">
+                <div style="width: 22px; height: 22px; background: var(--bg-2); border-radius: 3px;"></div>
+                <div style="flex:1; font-size: 12px">Coastline · 03:41</div>
+                <span class="mono-sm">1h ago</span>
+              </div>
+              <div style="padding: 10px 0; display:flex; align-items:center; gap:10px;">
+                <div style="width: 22px; height: 22px; background: var(--bg-2); border-radius: 3px;"></div>
+                <div style="flex:1; font-size: 12px">Rework of R.P. · 03:22</div>
+                <span class="mono-sm">2d ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/rhythmin-ui.js"></script>
+<script>
+(function() {
+const { icon, mountShell, toast } = window.RhythmIn;
+mountShell({ activeId: 'rebuild', crumbs: ['Workspace', 'Rebuild'], showTransport: false });
+
+// Icons
+document.getElementById('s1-check').innerHTML = icon('check');
+document.getElementById('s2-check').innerHTML = icon('check');
+document.getElementById('src-ic').innerHTML = icon('music');
+document.getElementById('src-play-ic').innerHTML = icon('play');
+document.getElementById('notice-ic-2').innerHTML = icon('info');
+document.getElementById('pp-ic').innerHTML = icon('wand');
+document.getElementById('hist-ic').innerHTML = icon('clock');
+document.getElementById('preview-ic').innerHTML = icon('play');
+document.getElementById('rebuild-ic').innerHTML = icon('sparkles');
+[['i1','drum'],['i2','wave'],['i3','piano'],['i4','guitar'],['i5','music'],['i6','headphones'],['i7','sparkles'],['i8','drum']]
+  .forEach(([id, n]) => document.getElementById(id).innerHTML = icon(n));
+['c1','c2','c3','c4','c5','c6','c7','c8','mode-c1','mode-c2','mode-c3'].forEach(id => document.getElementById(id).innerHTML = icon('check'));
+
+// Preview waveform SVG
+document.getElementById('pp-wave-svg').innerHTML = `
+  <svg viewBox="0 0 300 60" style="width:100%; height:56px; position: absolute; inset: 12px 12px auto 12px;">
+    ${Array.from({length: 100}, (_, i) => {
+      const h = 6 + Math.abs(Math.sin(i * 0.3) + Math.sin(i * 0.11) * 0.6) * 22;
+      return `<rect x="${i * 3}" y="${30 - h/2}" width="2" height="${h}" fill="var(--accent)" opacity="0.75"/>`;
+    }).join('')}
+  </svg>
+`;
+
+// Instrument toggle
+document.getElementById('instr-grid').addEventListener('click', (e) => {
+  const card = e.target.closest('.instr-card');
+  if (!card) return;
+  card.classList.toggle('selected');
+  updatePreviewLayers();
+});
+
+// Style mode radio-like
+document.querySelectorAll('.step-card:nth-of-type(4) .instr-card').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.step-card:nth-of-type(4) .instr-card').forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+  });
+});
+
+const layerMeta = {
+  drums: { name: 'Drums', color: '#ef4444', role: 'rhythmic' },
+  bass:  { name: 'Bass',  color: '#8b5cf6', role: 'harmonic' },
+  keys:  { name: 'Keys',  color: '#3b82f6', role: 'harmonic' },
+  lead:  { name: 'Lead',  color: '#22c55e', role: 'melodic' },
+  guitar:{ name: 'Guitar',color: '#f59e0b', role: 'harmonic' },
+  strings:{ name: 'Strings',color: '#06b6d4', role: 'harmonic' },
+  fx:    { name: 'FX',    color: '#ec4899', role: 'textural' },
+  perc:  { name: 'Perc',  color: '#eab308', role: 'rhythmic' },
+};
+
+function updatePreviewLayers() {
+  const all = document.querySelectorAll('#instr-grid .instr-card');
+  const html = Array.from(all).map(c => {
+    const id = c.dataset.instr;
+    const on = c.classList.contains('selected');
+    const m = layerMeta[id];
+    return `<div class="item ${on?'':'off'}">
+      <span class="swatch" style="background:${m.color}"></span>
+      <span class="name">${m.name}</span>
+      <span class="status">${on ? m.role : 'skip'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('pp-instr').innerHTML = html;
+}
+updatePreviewLayers();
+
+// Start rebuild
+document.getElementById('start-rebuild').addEventListener('click', () => {
+  const selected = document.querySelectorAll('#instr-grid .instr-card.selected').length;
+  if (selected === 0) return toast('Select at least one instrument', 'error');
+  document.getElementById('start-rebuild').innerHTML = `${icon('sparkles')} Processing…`;
+  document.getElementById('start-rebuild').disabled = true;
+  toast(`Rebuild queued · ${selected} instruments · faithful mode`, 'success', 4000);
+  setTimeout(() => {
+    document.getElementById('start-rebuild').innerHTML = `${icon('sparkles')} Start rebuild`;
+    document.getElementById('start-rebuild').disabled = false;
+    toast('Demo: real rebuild requires the arrangement engine — see ARCHITECTURE.md', 'info', 5000);
+  }, 2500);
+});
+})();
+</script>
+</body>
+</html>

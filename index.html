@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RhythmIn — Separate. Create. Rebuild.</title>
+<link rel="stylesheet" href="shared/rhythmin.css">
+<style>
+  /* Landing-specific overrides — no app shell here */
+  body { overflow-x: hidden; overflow-y: auto; }
+
+  .landing-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    padding: 18px 40px;
+    background: color-mix(in srgb, var(--bg-0) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .landing-nav .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 600; font-size: 15px; letter-spacing: -0.01em;
+  }
+  .landing-nav .brand .logo {
+    width: 24px; height: 24px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: grid; place-items: center;
+    color: white;
+  }
+  .landing-nav .brand .logo svg { width: 15px; height: 15px; }
+  .landing-nav .links {
+    margin-left: 40px;
+    display: flex; gap: 4px;
+  }
+  .landing-nav .links a {
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: var(--fg-2);
+    font-size: 13px;
+    transition: color 0.12s, background 0.12s;
+  }
+  .landing-nav .links a:hover { color: var(--fg-0); background: var(--bg-2); }
+  .landing-nav .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* HERO */
+  .hero {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 80px 40px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-glow);
+    color: var(--accent-hi);
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero-eyebrow .dot { background: var(--accent-hi); box-shadow: 0 0 6px var(--accent-hi); }
+  .hero h1 {
+    font-size: 68px;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  .hero h1 .accent { color: var(--accent-hi); }
+  .hero h1 .divide {
+    display: inline-block;
+    width: 4px; height: 44px;
+    background: var(--fg-4);
+    transform: translateY(6px);
+    margin: 0 4px;
+  }
+  .hero-sub {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--fg-2);
+    max-width: 480px;
+    margin-bottom: 32px;
+    text-wrap: pretty;
+  }
+  .hero-cta { display: flex; gap: 10px; align-items: center; margin-bottom: 40px; }
+  .hero-signals {
+    display: flex;
+    gap: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    max-width: 480px;
+  }
+  .hero-signal {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .hero-signal .val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 500; color: var(--fg-0); }
+  .hero-signal .lbl { font-size: 10px; color: var(--fg-3); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* MINI MIXER */
+  .mini-mixer {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: var(--shadow-1);
+    position: relative;
+  }
+  .mini-mixer::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 10px;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--accent-glow), transparent 60%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .mini-mixer-head {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .mini-mixer-head .title { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+  .mini-mixer-head .file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-2);
+    padding: 3px 8px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    border: 1px solid var(--line);
+  }
+  .mini-mixer-head .load-state { margin-left: auto; font-size: 11px; color: var(--fg-3); display: flex; align-items: center; gap: 6px; }
+
+  .mini-stem {
+    display: grid;
+    grid-template-columns: 24px 90px 1fr auto auto 40px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .mini-stem:last-child { border-bottom: none; }
+  .mini-stem .icon-box {
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    background: var(--bg-2);
+    display: grid; place-items: center;
+    border: 1px solid var(--line);
+  }
+  .mini-stem .icon-box svg { width: 14px; height: 14px; color: var(--fg-2); }
+  .mini-stem.active .icon-box { background: var(--accent-soft); border-color: var(--accent-glow); }
+  .mini-stem.active .icon-box svg { color: var(--accent-hi); }
+  .mini-stem .name { font-size: 12px; font-weight: 500; }
+  .mini-stem .name .sub { display: block; font-size: 10px; color: var(--fg-3); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+  .mini-stem .wave-canvas {
+    width: 100%;
+    height: 32px;
+    background: var(--bg-2);
+    border-radius: 3px;
+    border: 1px solid var(--line);
+  }
+  .mini-stem .btn-sm {
+    width: 22px; height: 22px;
+    border-radius: 3px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-strong);
+    color: var(--fg-2);
+    font-size: 9px;
+    font-weight: 700;
+    display: grid; place-items: center;
+    letter-spacing: 0.04em;
+    transition: all 0.12s;
+  }
+  .mini-stem .btn-sm:hover { color: var(--fg-0); }
+  .mini-stem .btn-sm.on-mute { background: var(--meter-hi); color: white; border-color: var(--meter-hi); }
+  .mini-stem .btn-sm.on-solo { background: var(--meter-mid); color: #111; border-color: var(--meter-mid); }
+  .mini-stem .fader {
+    width: 40px;
+    height: 22px;
+  }
+
+  .mini-transport {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mini-transport .tc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 4px 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+
+  /* WORKFLOWS section */
+  .section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 100px 40px 40px;
+  }
+  .section-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 40px;
+    gap: 40px;
+  }
+  .section-head h2 {
+    font-size: 36px; line-height: 1.05;
+    letter-spacing: -0.02em; font-weight: 600;
+    margin: 0;
+    max-width: 640px;
+    text-wrap: balance;
+  }
+  .section-head .kicker {
+    display: block;
+    font-size: 11px; color: var(--fg-3);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-head p { color: var(--fg-2); max-width: 400px; margin: 0; font-size: 14px; line-height: 1.5; }
+
+  .workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .workflow-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex; flex-direction: column;
+    min-height: 260px;
+    transition: border-color 0.15s, transform 0.15s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .workflow-card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+  .workflow-card .num {
+    font-size: 10px; color: var(--fg-3);
+    letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .workflow-card .title {
+    font-size: 22px; font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 6px 0 12px;
+  }
+  .workflow-card .desc {
+    color: var(--fg-2);
+    font-size: 13px; line-height: 1.55;
+    margin-bottom: 20px;
+  }
+  .workflow-card .art {
+    margin-top: auto;
+    padding: 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .workflow-card .foot {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 16px;
+    font-size: 12px; color: var(--accent-hi);
+    font-weight: 500;
+  }
+  .workflow-card .foot svg { width: 14px; height: 14px; transition: transform 0.15s; }
+  .workflow-card:hover .foot svg { transform: translateX(3px); }
+
+  /* Screenshot showcase */
+  .showcase {
+    max-width: 1400px;
+    margin: 60px auto 0;
+    padding: 0 40px;
+  }
+  .showcase-frame {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .showcase-frame .info h3 {
+    font-size: 26px; font-weight: 600; letter-spacing: -0.02em;
+    margin: 0 0 12px;
+  }
+  .showcase-frame .info p { color: var(--fg-2); margin: 0 0 16px; }
+  .showcase-frame .feature-list { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+  .showcase-frame .feat {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px;
+    padding: 8px 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+  }
+  .showcase-frame .feat .num { color: var(--accent-hi); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+  .mock-timeline {
+    background: var(--bg-0);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px;
+    min-height: 340px;
+    display: flex; flex-direction: column;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .mock-timeline .track {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 10px;
+    align-items: center;
+  }
+  .mock-timeline .lane {
+    height: 32px;
+    background: var(--bg-2);
+    border-radius: 3px;
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .mock-timeline .clip {
+    position: absolute;
+    top: 3px; bottom: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0.85;
+    display: flex; align-items: center;
+    padding: 0 6px;
+    font-size: 9px;
+    color: white;
+  }
+  .mock-timeline .clip.v2 { background: var(--violet); }
+  .mock-timeline .lane-name { font-size: 10px; color: var(--fg-2); }
+  .mock-timeline .ruler {
+    height: 20px;
+    display: flex;
+    padding-left: 90px;
+    font-size: 9px; color: var(--fg-3);
+    gap: 40px;
+  }
+
+  /* Feature strip */
+  .feature-strip {
+    max-width: 1400px;
+    margin: 100px auto 0;
+    padding: 60px 40px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 40px;
+  }
+  .feature { display: flex; flex-direction: column; gap: 8px; }
+  .feature .num {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-hi);
+    font-size: 11px; letter-spacing: 0.06em;
+  }
+  .feature h4 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .feature p { font-size: 12px; color: var(--fg-2); line-height: 1.5; margin: 0; }
+
+  /* Footer */
+  .footer {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 40px 40px;
+    display: grid;
+    grid-template-columns: 2fr repeat(3, 1fr);
+    gap: 40px;
+  }
+  .footer .col-brand p { font-size: 12px; color: var(--fg-3); margin: 12px 0 0; max-width: 260px; }
+  .footer h5 { font-size: 10px; color: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 12px; font-weight: 600; }
+  .footer a { display: block; font-size: 13px; color: var(--fg-1); margin-bottom: 8px; }
+  .footer a:hover { color: var(--fg-0); }
+  .footer-bottom {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 40px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    color: var(--fg-3);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Ambient bg */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 800px 400px at 80% -10%, var(--accent-soft), transparent 60%),
+      radial-gradient(ellipse 600px 300px at 10% 90%, color-mix(in srgb, var(--violet) 8%, transparent), transparent 60%);
+  }
+
+  @media (max-width: 1024px) {
+    .hero { grid-template-columns: 1fr; padding: 60px 24px; gap: 40px; }
+    .hero h1 { font-size: 48px; }
+    .workflow-grid { grid-template-columns: 1fr; }
+    .showcase-frame { grid-template-columns: 1fr; padding: 24px; }
+    .feature-strip { grid-template-columns: repeat(2, 1fr); }
+    .footer { grid-template-columns: 1fr; }
+    .section { padding: 60px 24px 20px; }
+    .landing-nav { padding: 14px 20px; }
+    .landing-nav .links { display: none; }
+  }
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 40px; }
+    .mini-stem { grid-template-columns: 20px 70px 1fr auto auto 30px; gap: 6px; }
+    .mini-stem .fader { width: 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<nav class="landing-nav">
+  <div class="brand">
+    <span class="logo" id="brand-logo"></span>
+    <span>RhythmIn</span>
+  </div>
+  <div class="links">
+    <a href="#workflows">Product</a>
+    <a href="#studio">Studio</a>
+    <a href="app/rebuild.html">Rebuild</a>
+    <a href="ARCHITECTURE.md">Docs</a>
+  </div>
+  <div class="right">
+    <button class="btn ghost icon" id="theme-toggle-nav" aria-label="Toggle theme"><span id="theme-icon-nav"></span></button>
+    <a href="app/dashboard.html" class="btn">Open studio</a>
+    <a href="app/upload.html" class="btn primary">Try demo <span id="arrow-icon"></span></a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-copy">
+    <span class="hero-eyebrow"><span class="dot"></span>Now in open beta · v0.1</span>
+    <h1>
+      Separate. <span class="accent">Create.</span> Rebuild.
+    </h1>
+    <p class="hero-sub">
+      A browser-native audio workstation for stem separation, multi-track composition, and AI-assisted arrangement. Built on the Web Audio API, designed for producers who care about workflow.
+    </p>
+    <div class="hero-cta">
+      <a href="app/upload.html" class="btn primary lg">Upload a track</a>
+      <a href="app/mixer.html" class="btn lg">Open demo mixer</a>
+    </div>
+    <div class="hero-signals">
+      <div class="hero-signal">
+        <span class="val">4</span>
+        <span class="lbl">stem model</span>
+      </div>
+      <div class="hero-signal">
+        <span class="val">44.1<span style="color:var(--fg-3);font-size:12px"> kHz</span></span>
+        <span class="lbl">sample rate</span>
+      </div>
+      <div class="hero-signal">
+        <span class="val">≤ 24<span style="color:var(--fg-3);font-size:12px"> bit</span></span>
+        <span class="lbl">depth</span>
+      </div>
+      <div class="hero-signal">
+        <span class="val">WAV<span style="color:var(--fg-3);font-size:12px"> · MP3 · FLAC</span></span>
+        <span class="lbl">export</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MINI MIXER — real Web Audio -->
+  <div class="mini-mixer" id="mini-mixer">
+    <div class="mini-mixer-head">
+      <span class="title">DEMO STEMS</span>
+      <span class="file">midnight-loop.wav · 08.000s · 120 BPM</span>
+      <span class="load-state" id="load-state"><span class="dot pulse"></span>loading…</span>
+    </div>
+    <div id="mini-stems"></div>
+    <div class="mini-transport">
+      <button class="transport-btn play" id="mini-play"><span id="mini-play-icon"></span></button>
+      <button class="transport-btn" id="mini-stop"><span id="mini-stop-icon"></span></button>
+      <div class="tc mono" id="mini-tc">00:00.000</div>
+      <div class="grow" style="height:4px; background:var(--bg-3); border-radius:2px; position:relative; overflow:hidden;">
+        <div id="mini-progress" style="position:absolute; top:0; bottom:0; left:0; width:0%; background:var(--accent); transition: width 0.06s linear;"></div>
+      </div>
+      <button class="btn" id="mini-loop" style="padding:4px 8px; font-size:11px">Loop: OFF</button>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOWS -->
+<section class="section" id="workflows">
+  <div class="section-head">
+    <div>
+      <span class="kicker">Three workflows · one project</span>
+      <h2>The full path from raw audio to finished stems.</h2>
+    </div>
+    <p>Every project moves through the same pipeline. Start anywhere, come back later, everything stays connected.</p>
+  </div>
+
+  <div class="workflow-grid">
+    <a href="app/upload.html" class="workflow-card">
+      <span class="num">01 / SEPARATE</span>
+      <div class="title">Split any track into stems.</div>
+      <div class="desc">Isolate vocals, drums, bass, and instrumental layers using open-source separation models. Preview, solo, and export each stem individually.</div>
+      <div class="art" id="art-separate"></div>
+      <div class="foot">Open separator <span id="foot-arrow-1"></span></div>
+    </a>
+    <a href="app/studio.html" class="workflow-card">
+      <span class="num">02 / CREATE</span>
+      <div class="title">A studio in the browser.</div>
+      <div class="desc">Sequence a real drum machine, play a subtractive synth, and arrange clips on a multi-track timeline. All Web Audio, all in-page.</div>
+      <div class="art" id="art-create"></div>
+      <div class="foot">Open studio <span id="foot-arrow-2"></span></div>
+    </a>
+    <a href="app/rebuild.html" class="workflow-card">
+      <span class="num">03 / REBUILD</span>
+      <div class="title">Reconstruct an instrumental.</div>
+      <div class="desc">Analyze source tempo, key, and structure — then rebuild an instrumental interpretation with your chosen instruments. Karaoke-ready.</div>
+      <div class="art" id="art-rebuild"></div>
+      <div class="foot">Try rebuild <span id="foot-arrow-3"></span></div>
+    </a>
+  </div>
+</section>
+
+<!-- STUDIO SHOWCASE -->
+<section class="section" id="studio" style="padding-top: 40px">
+  <div class="showcase">
+    <div class="showcase-frame">
+      <div class="info">
+        <span class="tag accent">Studio timeline</span>
+        <h3 style="margin-top: 12px">Every knob does something.</h3>
+        <p>The studio is not a mock. Playback is real Web Audio, the sequencer is Tone.js, the synth has an actual ADSR + resonant lowpass. Nothing is animation-only.</p>
+        <div class="feature-list">
+          <div class="feat"><span class="num">01</span> 16-step drum sequencer with per-cell velocity</div>
+          <div class="feat"><span class="num">02</span> Playable subtractive synth · ADSR · LP filter</div>
+          <div class="feat"><span class="num">03</span> Import stems directly onto the timeline</div>
+          <div class="feat"><span class="num">04</span> Mute · solo · pan · gain per track</div>
+        </div>
+      </div>
+      <div class="mock-timeline" id="mock-tl"></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE STRIP -->
+<section class="feature-strip">
+  <div class="feature">
+    <span class="num">01 / ENGINE</span>
+    <h4>Web Audio native</h4>
+    <p>Every playback path uses AudioBufferSourceNode, GainNode, StereoPanner, and AnalyserNode. Level meters reflect real signal energy.</p>
+  </div>
+  <div class="feature">
+    <span class="num">02 / OPEN</span>
+    <h4>Open-source separation</h4>
+    <p>Pipeline designed around Demucs and Spleeter. The demo layer is clearly labeled; production models plug in behind the same interface.</p>
+  </div>
+  <div class="feature">
+    <span class="num">03 / FORMATS</span>
+    <h4>WAV · MP3 · FLAC · OGG</h4>
+    <p>Encoders are architected server-side via FFmpeg. WAV export works in-browser today. Others gracefully disable when unavailable.</p>
+  </div>
+  <div class="feature">
+    <span class="num">04 / RUNS ANYWHERE</span>
+    <h4>Cloudflare · VS Code · GitHub</h4>
+    <p>No proprietary lock-in. Frontend deploys to Pages; ML worker runs on any container host. See ARCHITECTURE.md.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="col-brand">
+    <div style="display:flex; align-items:center; gap:10px; font-weight:600; font-size:15px;">
+      <span style="width:22px;height:22px; background: var(--accent); border-radius: 5px; display:grid; place-items:center; color:white;" id="footer-logo"></span>
+      RhythmIn
+    </div>
+    <p>An open-source audio workstation. Separate, create, and rebuild — from the browser.</p>
+  </div>
+  <div>
+    <h5>Product</h5>
+    <a href="app/upload.html">Separate</a>
+    <a href="app/mixer.html">Mixer</a>
+    <a href="app/studio.html">Studio</a>
+    <a href="app/rebuild.html">Rebuild</a>
+  </div>
+  <div>
+    <h5>Docs</h5>
+    <a href="ARCHITECTURE.md">Architecture</a>
+    <a href="README.md">Getting started</a>
+    <a href="ARCHITECTURE.md">API reference</a>
+  </div>
+  <div>
+    <h5>Community</h5>
+    <a href="#">GitHub</a>
+    <a href="#">Discord</a>
+    <a href="#">Changelog</a>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <span>© 2026 RhythmIn · MIT license</span>
+  <span>Built with Web Audio API · WaveSurfer.js · Tone.js</span>
+</div>
+
+<script src="shared/rhythmin-ui.js"></script>
+<script src="shared/audio-engine.js"></script>
+<script>
+(function() {
+const { icon, toggleTheme, getTheme, fmtTime } = window.RhythmIn;
+const { StemEngine, extractPeaks } = window.RhythmInAudio;
+
+// Populate icons
+document.getElementById('brand-logo').innerHTML = icon('logo');
+document.getElementById('footer-logo').innerHTML = icon('logo');
+document.getElementById('arrow-icon').innerHTML = icon('chevronRight');
+document.getElementById('mini-play-icon').innerHTML = icon('play');
+document.getElementById('mini-stop-icon').innerHTML = icon('stop');
+['foot-arrow-1','foot-arrow-2','foot-arrow-3'].forEach(id => document.getElementById(id).innerHTML = icon('chevronRight'));
+document.getElementById('theme-icon-nav').innerHTML = getTheme() === 'dark' ? icon('sun') : icon('moon');
+document.getElementById('theme-toggle-nav').addEventListener('click', () => {
+  toggleTheme();
+  document.getElementById('theme-icon-nav').innerHTML = getTheme() === 'dark' ? icon('sun') : icon('moon');
+});
+
+// Populate workflow card art (simple SVG placeholders — no AI slop)
+document.getElementById('art-separate').innerHTML = `
+  <svg viewBox="0 0 300 80" style="width:100%; height:60px;">
+    <g stroke="currentColor" stroke-width="1" fill="none" opacity="0.35">
+      <path d="M0 40 L300 40" stroke-dasharray="2 4"/>
+    </g>
+    <g fill="var(--accent)" opacity="0.8">
+      ${Array.from({length: 60}, (_, i) => {
+        const h = 8 + Math.abs(Math.sin(i * 0.4) + Math.sin(i * 0.15) * 0.5) * 22;
+        return `<rect x="${i*5}" y="${40 - h/2}" width="3" height="${h}"/>`;
+      }).join('')}
+    </g>
+    <g fill="var(--violet)" opacity="0.4">
+      ${Array.from({length: 60}, (_, i) => {
+        const h = 4 + Math.abs(Math.cos(i * 0.3)) * 12;
+        return `<rect x="${i*5}" y="${44}" width="3" height="${h}"/>`;
+      }).join('')}
+    </g>
+  </svg>
+`;
+document.getElementById('art-create').innerHTML = `
+  <svg viewBox="0 0 300 80" style="width:100%; height:60px;">
+    ${Array.from({length: 16}, (_, i) => {
+      const active = [0,2,4,6,8,10,12,14].includes(i) || [1,5,9,13].includes(i);
+      return `<rect x="${i*18+2}" y="10" width="14" height="14" rx="2" fill="${active ? 'var(--accent)' : 'var(--bg-3)'}" opacity="${active ? 0.9 : 0.5}"/>`;
+    }).join('')}
+    ${Array.from({length: 16}, (_, i) => {
+      const active = [4,12].includes(i);
+      return `<rect x="${i*18+2}" y="28" width="14" height="14" rx="2" fill="${active ? 'var(--accent)' : 'var(--bg-3)'}" opacity="${active ? 0.9 : 0.5}"/>`;
+    }).join('')}
+    ${Array.from({length: 16}, (_, i) => {
+      const active = [i,i+1].some(x => [0,1,4,5,8,9,12,13].includes(x)) && (i % 2 === 0);
+      return `<rect x="${i*18+2}" y="46" width="14" height="14" rx="2" fill="${active ? 'var(--violet)' : 'var(--bg-3)'}" opacity="${active ? 0.9 : 0.5}"/>`;
+    }).join('')}
+  </svg>
+`;
+document.getElementById('art-rebuild').innerHTML = `
+  <svg viewBox="0 0 300 80" style="width:100%; height:60px;">
+    <defs>
+      <linearGradient id="rb-grad" x1="0" x2="1">
+        <stop offset="0" stop-color="var(--fg-3)" stop-opacity="0.3"/>
+        <stop offset="1" stop-color="var(--accent)" stop-opacity="0.9"/>
+      </linearGradient>
+    </defs>
+    <path d="M0 60 L100 60 L100 30 L200 30 L200 40 L300 40" stroke="var(--fg-3)" stroke-width="1.5" fill="none" opacity="0.5"/>
+    <path d="M0 60 L100 60 L100 30 L200 30 L200 40 L300 40" stroke="url(#rb-grad)" stroke-width="2" fill="none" stroke-dasharray="4 4"/>
+    <circle cx="100" cy="30" r="4" fill="var(--accent)"/>
+    <circle cx="200" cy="30" r="4" fill="var(--accent)"/>
+    <text x="10" y="20" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--fg-3)">Intro</text>
+    <text x="110" y="20" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--fg-0)">Verse</text>
+    <text x="210" y="20" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--fg-0)">Chorus</text>
+  </svg>
+`;
+
+// Mock timeline in showcase
+const mockTl = document.getElementById('mock-tl');
+const tlTracks = [
+  { name: 'DRUMS', clips: [{start: 0, len: 25, v: 1},{start: 30, len: 60, v:1}] },
+  { name: 'BASS',  clips: [{start: 5, len: 20, v: 1},{start: 32, len: 55, v:1}] },
+  { name: 'KEYS',  clips: [{start: 15, len: 40, v: 2},{start: 60, len: 30, v:2}] },
+  { name: 'LEAD',  clips: [{start: 35, len: 25, v: 1},{start: 70, len: 20, v:1}] },
+  { name: 'FX',    clips: [{start: 50, len: 10, v: 2}] }
+];
+mockTl.innerHTML = `
+  <div class="ruler"><span>0:00</span><span>0:04</span><span>0:08</span><span>0:12</span><span>0:16</span><span>0:20</span></div>
+  ${tlTracks.map(t => `
+    <div class="track">
+      <span class="lane-name">${t.name}</span>
+      <div class="lane">
+        ${t.clips.map(c => `<div class="clip ${c.v===2?'v2':''}" style="left:${c.start}%; width:${c.len}%">${c.len > 15 ? t.name.toLowerCase()+'.wav' : ''}</div>`).join('')}
+      </div>
+    </div>
+  `).join('')}
+`;
+
+// ============ MINI MIXER ============
+const STEMS = [
+  { id: 'drums', name: 'Drums',    sub: 'kit / percussion', icon: 'drum',  url: 'assets/stems/drums.wav', color: '#ef4444' },
+  { id: 'bass',  name: 'Bass',     sub: 'sub / low-end',   icon: 'wave',  url: 'assets/stems/bass.wav',  color: '#8b5cf6' },
+  { id: 'keys',  name: 'Keys',     sub: 'pad / harmony',   icon: 'piano', url: 'assets/stems/keys.wav',  color: '#3b82f6' },
+  { id: 'lead',  name: 'Lead',     sub: 'melody / synth',  icon: 'music', url: 'assets/stems/lead.wav',  color: '#22c55e' }
+];
+
+const engine = new StemEngine();
+const stemsContainer = document.getElementById('mini-stems');
+
+function drawPeaks(canvas, peaks, color) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  const barW = w / peaks.length;
+  ctx.fillStyle = color;
+  for (let i = 0; i < peaks.length; i++) {
+    const barH = Math.max(1, peaks[i] * h * 0.9);
+    ctx.fillRect(i * barW, (h - barH) / 2, Math.max(1, barW - 0.5), barH);
+  }
+}
+
+async function initMiniMixer() {
+  // Render UI shell first (with loading state)
+  stemsContainer.innerHTML = STEMS.map(s => `
+    <div class="mini-stem" data-stem="${s.id}">
+      <div class="icon-box">${icon(s.icon)}</div>
+      <div class="name">${s.name}<span class="sub">${s.sub}</span></div>
+      <canvas class="wave-canvas" data-canvas="${s.id}"></canvas>
+      <button class="btn-sm" data-mute="${s.id}">M</button>
+      <button class="btn-sm" data-solo="${s.id}">S</button>
+      <input type="range" class="slider fader" min="0" max="1.2" step="0.01" value="0.8" data-vol="${s.id}">
+    </div>
+  `).join('');
+
+  // Load stems
+  try {
+    for (const s of STEMS) {
+      const stem = await engine.addStem(s.id, s.url);
+      const canvas = stemsContainer.querySelector(`[data-canvas="${s.id}"]`);
+      const peaks = await extractPeaks(stem.buffer, 80);
+      requestAnimationFrame(() => drawPeaks(canvas, peaks, s.color));
+    }
+    document.getElementById('load-state').innerHTML = `<span class="dot on"></span>ready · ${engine.duration.toFixed(1)}s`;
+    document.getElementById('load-state').style.color = 'var(--meter-low)';
+  } catch (e) {
+    document.getElementById('load-state').innerHTML = `<span style="color:var(--meter-hi)">Load failed</span>`;
+    console.error(e);
+  }
+
+  // Wire controls
+  stemsContainer.addEventListener('click', (e) => {
+    const muteBtn = e.target.closest('[data-mute]');
+    const soloBtn = e.target.closest('[data-solo]');
+    if (muteBtn) {
+      const id = muteBtn.dataset.mute;
+      const s = engine.stems.get(id);
+      engine.setMute(id, !s.muted);
+      muteBtn.classList.toggle('on-mute', s.muted);
+      muteBtn.parentElement.classList.toggle('active', !s.muted && (!Array.from(engine.stems.values()).some(x => x.soloed) || s.soloed));
+      updateActiveStates();
+    } else if (soloBtn) {
+      const id = soloBtn.dataset.solo;
+      const s = engine.stems.get(id);
+      engine.setSolo(id, !s.soloed);
+      soloBtn.classList.toggle('on-solo', s.soloed);
+      updateActiveStates();
+    }
+  });
+  stemsContainer.addEventListener('input', (e) => {
+    const vol = e.target.closest('[data-vol]');
+    if (vol) engine.setVolume(vol.dataset.vol, parseFloat(vol.value));
+  });
+
+  function updateActiveStates() {
+    const anySolo = Array.from(engine.stems.values()).some(s => s.soloed);
+    stemsContainer.querySelectorAll('.mini-stem').forEach(el => {
+      const id = el.dataset.stem;
+      const s = engine.stems.get(id);
+      const audible = !s.muted && (!anySolo || s.soloed);
+      el.classList.toggle('active', audible);
+    });
+  }
+  updateActiveStates();
+}
+
+// Transport
+const playBtn = document.getElementById('mini-play');
+const stopBtn = document.getElementById('mini-stop');
+const loopBtn = document.getElementById('mini-loop');
+const tc = document.getElementById('mini-tc');
+const prog = document.getElementById('mini-progress');
+
+playBtn.addEventListener('click', async () => {
+  if (engine.playing) {
+    engine.pause();
+    document.getElementById('mini-play-icon').innerHTML = icon('play');
+  } else {
+    await engine.play();
+    document.getElementById('mini-play-icon').innerHTML = icon('pause');
+  }
+});
+stopBtn.addEventListener('click', () => {
+  engine.stop(true);
+  document.getElementById('mini-play-icon').innerHTML = icon('play');
+  tc.textContent = '00:00.000';
+  prog.style.width = '0%';
+});
+loopBtn.addEventListener('click', () => {
+  const on = !engine.loop;
+  engine.toggleLoop(on);
+  loopBtn.textContent = 'Loop: ' + (on ? 'ON' : 'OFF');
+  loopBtn.style.color = on ? 'var(--accent-hi)' : '';
+});
+engine.onTick(({ time, stemLevels }) => {
+  tc.textContent = fmtTime(time);
+  prog.style.width = ((time / engine.duration) * 100) + '%';
+  // pulse active stem icon-boxes based on level
+  stemsContainer.querySelectorAll('.mini-stem').forEach(el => {
+    const id = el.dataset.stem;
+    const lvl = stemLevels.get(id) || 0;
+    const box = el.querySelector('.icon-box');
+    if (el.classList.contains('active')) {
+      box.style.borderColor = `oklch(0.7 0.15 240 / ${0.3 + lvl})`;
+      box.style.boxShadow = lvl > 0.1 ? `0 0 ${lvl * 12}px var(--accent-glow)` : '';
+    }
+  });
+});
+engine.onEnded(() => {
+  document.getElementById('mini-play-icon').innerHTML = icon('play');
+  tc.textContent = fmtTime(engine.duration);
+  prog.style.width = '100%';
+});
+
+// Kick off loading (deferred until first user interaction is fine for autoplay policy)
+window.addEventListener('load', initMiniMixer);
+})();
+</script>
+</body>
+</html>

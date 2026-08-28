@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mixer — RhythmIn</title>
+<link rel="stylesheet" href="../shared/rhythmin.css">
+<style>
+  .mixer-page {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .mixer-toolbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-1);
+  }
+  .mixer-toolbar .project {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mixer-toolbar .project-name { font-size: 13px; font-weight: 500; }
+  .mixer-toolbar .project-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-3);
+    padding: 2px 8px;
+    background: var(--bg-2);
+    border-radius: 3px;
+    border: 1px solid var(--line);
+  }
+  .mixer-toolbar .actions { margin-left: auto; display: flex; gap: 6px; }
+
+  .mixer-main {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    overflow: hidden;
+  }
+
+  /* Left: stem strips */
+  .strips {
+    overflow: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--bg-0);
+  }
+
+  .strip {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: grid;
+    grid-template-columns: 200px 1fr 80px;
+    gap: 0;
+    align-items: stretch;
+    min-height: 90px;
+    transition: border-color 0.15s;
+  }
+  .strip.soloed { border-color: var(--meter-mid); }
+  .strip.muted { opacity: 0.55; }
+
+  .strip-head {
+    padding: 12px 14px;
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    gap: 8px;
+  }
+  .strip-head-top {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .strip-icon {
+    width: 26px; height: 26px;
+    background: var(--bg-2);
+    border-radius: 5px;
+    display: grid; place-items: center;
+    color: var(--fg-2);
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .strip-icon svg { width: 14px; height: 14px; }
+  .strip.active .strip-icon { background: var(--accent-soft); border-color: var(--accent-glow); color: var(--accent-hi); }
+  .strip-name-block { min-width: 0; flex: 1; }
+  .strip-name { font-size: 13px; font-weight: 500; }
+  .strip-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-3); }
+
+  .strip-controls {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ctrl-btn {
+    width: 26px; height: 22px;
+    border: 1px solid var(--line-strong);
+    background: var(--bg-2);
+    color: var(--fg-2);
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    display: grid; place-items: center;
+    transition: all 0.1s;
+  }
+  .ctrl-btn:hover { color: var(--fg-0); }
+  .ctrl-btn.on-mute { background: var(--meter-hi); color: white; border-color: var(--meter-hi); }
+  .ctrl-btn.on-solo { background: var(--meter-mid); color: #111; border-color: var(--meter-mid); }
+  .ctrl-btn svg { width: 12px; height: 12px; }
+
+  .knob-group { display: flex; gap: 12px; align-items: center; margin-top: 4px; }
+  .knob-group .knob-item { display: flex; flex-direction: column; gap: 3px; align-items: center; }
+  .knob-group label {
+    font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--fg-3); font-weight: 600;
+  }
+  .knob-group .val { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-2); min-width: 32px; text-align: center; }
+  .knob {
+    width: 100%;
+    height: 4px;
+  }
+
+  /* Middle: waveform + meter */
+  .strip-wave-wrap {
+    position: relative;
+    padding: 12px;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .strip-wave {
+    position: relative;
+    width: 100%;
+    height: 60px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .strip-wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .strip-wave .playhead {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent-hi);
+    box-shadow: 0 0 8px var(--accent-glow);
+    left: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+  }
+  .strip-wave .clip-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, var(--accent-soft) var(--played, 0%), transparent var(--played, 0%));
+    pointer-events: none;
+  }
+
+  /* Right: meter column */
+  .strip-meter-col {
+    padding: 12px 16px;
+    border-left: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .meter-lg {
+    width: 8px;
+    height: 60px;
+    background: var(--bg-3);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .meter-lg .fill {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 0%;
+    background: linear-gradient(to top, var(--meter-low) 0%, var(--meter-low) 60%, var(--meter-mid) 78%, var(--meter-hi) 92%);
+    transition: height 0.06s linear;
+  }
+
+  /* Right panel: master + properties */
+  .side-col {
+    border-left: 1px solid var(--line);
+    background: var(--bg-1);
+    overflow: auto;
+    display: flex; flex-direction: column;
+  }
+
+  .master-block {
+    padding: 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .master-block h3 {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--fg-3);
+    margin: 0 0 14px;
+  }
+  .master-canvas {
+    width: 100%; height: 60px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .master-meters {
+    display: flex; gap: 4px; margin-top: 14px; height: 80px;
+  }
+  .master-meters .meter-lg { flex: 1; height: 80px; }
+
+  .master-vol {
+    margin-top: 14px;
+    padding: 10px;
+    background: var(--bg-2);
+    border-radius: 5px;
+    border: 1px solid var(--line);
+  }
+  .master-vol label {
+    display: flex; justify-content: space-between; font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px;
+  }
+
+  .props-block {
+    padding: 20px;
+    flex: 1;
+  }
+  .props-block h3 {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--fg-3);
+    margin: 0 0 12px;
+  }
+  .kv { display: grid; grid-template-columns: 1fr auto; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
+  .kv:last-child { border-bottom: none; }
+  .kv .k { color: var(--fg-3); }
+  .kv .v { font-family: 'JetBrains Mono', monospace; color: var(--fg-1); }
+
+  /* Global timeline / seek strip */
+  .seek-bar {
+    padding: 12px 20px;
+    border-top: 1px solid var(--line);
+    background: var(--bg-1);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .seek-bar .tc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 4px 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .seek-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 3px;
+    position: relative;
+    cursor: pointer;
+  }
+  .seek-fill {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: var(--accent);
+    width: 0%;
+    border-radius: 3px;
+  }
+  .seek-thumb {
+    position: absolute;
+    top: 50%;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--accent);
+    left: 0;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  @media (max-width: 900px) {
+    .mixer-main { grid-template-columns: 1fr; }
+    .side-col { display: none; }
+    .strip { grid-template-columns: 160px 1fr 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main" style="padding: 0">
+    <div class="mixer-page">
+
+      <!-- Toolbar -->
+      <div class="mixer-toolbar">
+        <div class="project">
+          <span id="proj-ic" style="color:var(--accent-hi); display:flex"></span>
+          <span class="project-name">Midnight Loop</span>
+          <span class="project-meta">demo · 4 stems · 08.000s · 120 BPM</span>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" id="reset-btn"><span id="reset-ic"></span> Reset</button>
+          <button class="btn" id="add-btn"><span id="add-ic"></span> Add stem</button>
+          <button class="btn primary" id="export-btn"><span id="export-ic"></span> Export</button>
+        </div>
+      </div>
+
+      <!-- Main: strips + side panel -->
+      <div class="mixer-main">
+        <div class="strips" id="strips">
+          <!-- Loading state -->
+          <div id="strips-loading" style="text-align:center; padding: 60px; color: var(--fg-3); font-size: 12px;">
+            <div class="dot pulse on" style="margin: 0 auto 8px;"></div>
+            Loading stems…
+          </div>
+        </div>
+
+        <div class="side-col">
+          <div class="master-block">
+            <h3>Master</h3>
+            <canvas class="master-canvas" id="master-wave"></canvas>
+            <div class="master-meters">
+              <div class="meter-lg"><div class="fill" id="master-fill-l"></div></div>
+              <div class="meter-lg"><div class="fill" id="master-fill-r"></div></div>
+            </div>
+            <div class="master-vol">
+              <label><span>Output</span><span class="mono" id="master-vol-val">−1.0 dB</span></label>
+              <input type="range" class="slider" id="master-vol" min="0" max="1.2" step="0.01" value="0.9">
+            </div>
+          </div>
+
+          <div class="props-block">
+            <h3>Project</h3>
+            <div class="kv"><span class="k">Sample rate</span><span class="v" id="prop-sr">—</span></div>
+            <div class="kv"><span class="k">Duration</span><span class="v" id="prop-dur">—</span></div>
+            <div class="kv"><span class="k">Channels</span><span class="v" id="prop-ch">stereo (2)</span></div>
+            <div class="kv"><span class="k">Stems</span><span class="v" id="prop-stems">—</span></div>
+            <div class="kv"><span class="k">Model</span><span class="v" style="color:var(--fg-3)">demo pipeline</span></div>
+
+            <h3 style="margin-top: 20px">Keyboard</h3>
+            <div class="kv"><span class="k">Play / pause</span><span class="v">Space</span></div>
+            <div class="kv"><span class="k">Stop</span><span class="v">Esc</span></div>
+            <div class="kv"><span class="k">Loop</span><span class="v">L</span></div>
+            <div class="kv"><span class="k">Solo (hover)</span><span class="v">S</span></div>
+            <div class="kv"><span class="k">Mute (hover)</span><span class="v">M</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seek bar -->
+      <div class="seek-bar">
+        <button class="transport-btn play" id="seek-play"><span id="seek-play-ic"></span></button>
+        <button class="transport-btn" id="seek-stop"><span id="seek-stop-ic"></span></button>
+        <button class="transport-btn" id="seek-loop" title="Loop"><span id="seek-loop-ic"></span></button>
+        <div class="tc" id="seek-cur">00:00.000</div>
+        <div class="seek-track" id="seek-track">
+          <div class="seek-fill" id="seek-fill"></div>
+          <div class="seek-thumb" id="seek-thumb"></div>
+        </div>
+        <div class="tc" id="seek-total" style="color:var(--fg-3)">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/rhythmin-ui.js"></script>
+<script src="../shared/audio-engine.js"></script>
+<script>
+(function() {
+const { icon, mountShell, toast, fmtTime, fmtDb } = window.RhythmIn;
+const { StemEngine, extractPeaks, downloadBlob } = window.RhythmInAudio;
+
+mountShell({
+  activeId: 'mixer',
+  crumbs: ['Workspace', 'Midnight Loop', 'Mixer'],
+  showTransport: false // page has its own seek bar; global transport not needed
+});
+// Remove default transport (mount added it — we don't want double)
+document.querySelector('.transport')?.remove();
+document.querySelector('.app').style.gridTemplateAreas = '"sidebar main"';
+document.querySelector('.app').style.gridTemplateRows = '1fr';
+
+// Icons
+document.getElementById('proj-ic').innerHTML = icon('folder');
+document.getElementById('reset-ic').innerHTML = icon('trash');
+document.getElementById('add-ic').innerHTML = icon('plus');
+document.getElementById('export-ic').innerHTML = icon('download');
+document.getElementById('seek-play-ic').innerHTML = icon('play');
+document.getElementById('seek-stop-ic').innerHTML = icon('stop');
+document.getElementById('seek-loop-ic').innerHTML = icon('loop');
+
+// Stems
+const STEMS = [
+  { id: 'drums', name: 'Drums · Percussion', sub: 'demucs · v4 · confidence 0.94', icon: 'drum', url: '../assets/stems/drums.wav', color: '#ef4444' },
+  { id: 'bass',  name: 'Bass',               sub: 'demucs · v4 · confidence 0.91', icon: 'wave', url: '../assets/stems/bass.wav', color: '#8b5cf6' },
+  { id: 'keys',  name: 'Keys · Harmony',     sub: 'demucs · v4 · confidence 0.87', icon: 'piano', url: '../assets/stems/keys.wav', color: '#3b82f6' },
+  { id: 'lead',  name: 'Lead · Melody',      sub: 'demucs · v4 · confidence 0.82', icon: 'music', url: '../assets/stems/lead.wav', color: '#22c55e' },
+];
+
+const engine = new StemEngine();
+const stripsEl = document.getElementById('strips');
+
+async function init() {
+  try {
+    for (const s of STEMS) {
+      await engine.addStem(s.id, s.url);
+    }
+  } catch (e) {
+    stripsEl.innerHTML = `<div style="padding:40px; text-align:center; color:var(--meter-hi)">Failed to load stems: ${e.message}</div>`;
+    return;
+  }
+
+  // Build strips
+  stripsEl.innerHTML = STEMS.map(s => `
+    <div class="strip active" data-stem="${s.id}">
+      <div class="strip-head">
+        <div class="strip-head-top">
+          <div class="strip-icon">${icon(s.icon)}</div>
+          <div class="strip-name-block">
+            <div class="strip-name">${s.name}</div>
+            <div class="strip-sub">${s.sub}</div>
+          </div>
+        </div>
+        <div class="strip-controls">
+          <button class="ctrl-btn" data-mute="${s.id}">M</button>
+          <button class="ctrl-btn" data-solo="${s.id}">S</button>
+          <button class="ctrl-btn" data-download="${s.id}" title="Download stem">${icon('download')}</button>
+          <div class="grow"></div>
+          <button class="ctrl-btn" title="More">${icon('more')}</button>
+        </div>
+        <div class="knob-group">
+          <div class="knob-item" style="flex: 1;">
+            <label>VOL <span class="val" data-vol-val="${s.id}">0.80</span></label>
+            <input type="range" class="knob slider" min="0" max="1.2" step="0.01" value="0.8" data-vol="${s.id}">
+          </div>
+          <div class="knob-item" style="flex: 1;">
+            <label>PAN <span class="val" data-pan-val="${s.id}">C</span></label>
+            <input type="range" class="knob slider" min="-1" max="1" step="0.01" value="0" data-pan="${s.id}">
+          </div>
+        </div>
+      </div>
+      <div class="strip-wave-wrap">
+        <div class="strip-wave">
+          <canvas data-wave="${s.id}"></canvas>
+          <div class="clip-overlay" data-overlay="${s.id}"></div>
+          <div class="playhead" data-playhead="${s.id}"></div>
+        </div>
+      </div>
+      <div class="strip-meter-col">
+        <div class="meter-lg"><div class="fill" data-meter="${s.id}L"></div></div>
+        <div class="meter-lg"><div class="fill" data-meter="${s.id}R"></div></div>
+      </div>
+    </div>
+  `).join('');
+
+  // Draw waveforms
+  for (const s of STEMS) {
+    const stem = engine.stems.get(s.id);
+    const canvas = stripsEl.querySelector(`[data-wave="${s.id}"]`);
+    const peaks = await extractPeaks(stem.buffer, 300);
+    drawWave(canvas, peaks, s.color);
+  }
+
+  // Fill properties
+  const firstStem = engine.stems.get(STEMS[0].id);
+  document.getElementById('prop-sr').textContent = firstStem.buffer.sampleRate + ' Hz';
+  document.getElementById('prop-dur').textContent = engine.duration.toFixed(3) + 's';
+  document.getElementById('prop-stems').textContent = STEMS.length;
+  document.getElementById('seek-total').textContent = fmtTime(engine.duration);
+
+  // Wire controls
+  stripsEl.addEventListener('click', (e) => {
+    const mute = e.target.closest('[data-mute]');
+    const solo = e.target.closest('[data-solo]');
+    const dl = e.target.closest('[data-download]');
+    if (mute) {
+      const id = mute.dataset.mute;
+      const s = engine.stems.get(id);
+      engine.setMute(id, !s.muted);
+      mute.classList.toggle('on-mute', s.muted);
+      updateStripStates();
+    } else if (solo) {
+      const id = solo.dataset.solo;
+      const s = engine.stems.get(id);
+      engine.setSolo(id, !s.soloed);
+      solo.classList.toggle('on-solo', s.soloed);
+      updateStripStates();
+    } else if (dl) {
+      const id = dl.dataset.download;
+      const stem = engine.stems.get(id);
+      const meta = STEMS.find(x => x.id === id);
+      const blob = window.RhythmInAudio.audioBufferToWavBlob(stem.buffer);
+      downloadBlob(blob, `${meta.id}.wav`);
+      toast(`Downloaded ${meta.id}.wav`, 'success');
+    }
+  });
+  stripsEl.addEventListener('input', (e) => {
+    const vol = e.target.closest('[data-vol]');
+    const pan = e.target.closest('[data-pan]');
+    if (vol) {
+      const v = parseFloat(vol.value);
+      engine.setVolume(vol.dataset.vol, v);
+      stripsEl.querySelector(`[data-vol-val="${vol.dataset.vol}"]`).textContent = v.toFixed(2);
+    }
+    if (pan) {
+      const p = parseFloat(pan.value);
+      engine.setPan(pan.dataset.pan, p);
+      const label = p === 0 ? 'C' : (p > 0 ? 'R' : 'L') + Math.abs(Math.round(p * 100));
+      stripsEl.querySelector(`[data-pan-val="${pan.dataset.pan}"]`).textContent = label;
+    }
+  });
+
+  function updateStripStates() {
+    const anySolo = [...engine.stems.values()].some(s => s.soloed);
+    stripsEl.querySelectorAll('.strip').forEach(el => {
+      const id = el.dataset.stem;
+      const s = engine.stems.get(id);
+      const audible = !s.muted && (!anySolo || s.soloed);
+      el.classList.toggle('active', audible);
+      el.classList.toggle('muted', !audible);
+      el.classList.toggle('soloed', s.soloed);
+    });
+  }
+
+  document.getElementById('strips-loading')?.remove();
+}
+
+function drawWave(canvas, peaks, color) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = color;
+  const barW = w / peaks.length;
+  for (let i = 0; i < peaks.length; i++) {
+    const barH = Math.max(1, peaks[i] * h * 0.85);
+    ctx.fillRect(i * barW, (h - barH) / 2, Math.max(1, barW - 0.5), barH);
+  }
+}
+
+// ---- Transport ----
+const playBtn = document.getElementById('seek-play');
+const stopBtn = document.getElementById('seek-stop');
+const loopBtn = document.getElementById('seek-loop');
+const curEl = document.getElementById('seek-cur');
+const seekFill = document.getElementById('seek-fill');
+const seekThumb = document.getElementById('seek-thumb');
+const seekTrack = document.getElementById('seek-track');
+
+playBtn.addEventListener('click', async () => {
+  if (engine.playing) {
+    engine.pause();
+    document.getElementById('seek-play-ic').innerHTML = icon('play');
+  } else {
+    await engine.play();
+    document.getElementById('seek-play-ic').innerHTML = icon('pause');
+  }
+});
+stopBtn.addEventListener('click', () => {
+  engine.stop(true);
+  document.getElementById('seek-play-ic').innerHTML = icon('play');
+  curEl.textContent = '00:00.000';
+  seekFill.style.width = '0%';
+  seekThumb.style.left = '0%';
+});
+loopBtn.addEventListener('click', () => {
+  const on = !engine.loop;
+  engine.toggleLoop(on);
+  loopBtn.classList.toggle('active', on);
+});
+
+seekTrack.addEventListener('click', (e) => {
+  if (!engine.duration) return;
+  const rect = seekTrack.getBoundingClientRect();
+  const p = (e.clientX - rect.left) / rect.width;
+  engine.seek(engine.duration * p);
+});
+
+engine.onTick(({ time, stemLevels, masterLevel }) => {
+  curEl.textContent = fmtTime(time);
+  const pct = (time / engine.duration) * 100;
+  seekFill.style.width = pct + '%';
+  seekThumb.style.left = pct + '%';
+
+  for (const [id, lvl] of stemLevels.entries()) {
+    const lf = document.querySelector(`[data-meter="${id}L"]`);
+    const rf = document.querySelector(`[data-meter="${id}R"]`);
+    if (lf) lf.style.height = (lvl * 100) + '%';
+    if (rf) rf.style.height = (lvl * 100) + '%';
+    // playhead on waveform
+    const ph = document.querySelector(`[data-playhead="${id}"]`);
+    if (ph) ph.style.left = pct + '%';
+    const ov = document.querySelector(`[data-overlay="${id}"]`);
+    if (ov) ov.style.setProperty('--played', pct + '%');
+  }
+  document.getElementById('master-fill-l').style.height = (masterLevel * 100) + '%';
+  document.getElementById('master-fill-r').style.height = (masterLevel * 100) + '%';
+});
+engine.onEnded(() => {
+  document.getElementById('seek-play-ic').innerHTML = icon('play');
+});
+
+// Master volume
+document.getElementById('master-vol').addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  engine.setMasterVolume(v);
+  document.getElementById('master-vol-val').textContent = v === 0 ? '−∞ dB' : `${fmtDb(v)} dB`;
+});
+
+// Draw master waveform (mix)
+async function drawMasterWave() {
+  try {
+    const res = await fetch('../assets/stems/full-mix.wav');
+    const ab = await res.arrayBuffer();
+    const ctx = new AudioContext();
+    const buf = await ctx.decodeAudioData(ab);
+    const peaks = await extractPeaks(buf, 200);
+    const canvas = document.getElementById('master-wave');
+    drawWave(canvas, peaks, getComputedStyle(document.documentElement).getPropertyValue('--fg-2').trim());
+  } catch(e) { console.warn('master wave failed', e); }
+}
+
+// Export
+document.getElementById('export-btn').addEventListener('click', () => openExport());
+
+function openExport() {
+  const body = `
+    <div class="modal-header">
+      <span style="color:var(--accent-hi); display:inline-flex">${icon('download')}</span>
+      <h3 class="modal-title">Export mix</h3>
+      <button class="btn ghost icon" onclick="RhythmIn.closeModal()">${icon('x')}</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <div class="label" style="margin-bottom:8px">Source</div>
+          <div class="col" style="gap: 6px">
+            <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--accent); border-radius:5px; font-size:12px; cursor:pointer">
+              <input type="radio" name="src" checked value="mix"> Full mix (all stems)
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--line); border-radius:5px; font-size:12px; cursor:pointer">
+              <input type="radio" name="src" value="stems"> Individual stems (zip)
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--line); border-radius:5px; font-size:12px; cursor:pointer">
+              <input type="radio" name="src" value="karaoke"> Instrumental / karaoke
+            </label>
+          </div>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:8px">Format</div>
+          <div class="col" style="gap: 6px">
+            <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--accent); border-radius:5px; font-size:12px; cursor:pointer">
+              <input type="radio" name="fmt" checked value="wav"> WAV · 44.1 kHz · 16-bit
+              <span class="tag good" style="margin-left:auto">available</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--line); border-radius:5px; font-size:12px; cursor:not-allowed; opacity:0.55">
+              <input type="radio" name="fmt" value="mp3" disabled> MP3 · 320 kbps
+              <span class="tag" style="margin-left:auto">needs server</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--line); border-radius:5px; font-size:12px; cursor:not-allowed; opacity:0.55">
+              <input type="radio" name="fmt" value="flac" disabled> FLAC · lossless
+              <span class="tag" style="margin-left:auto">needs server</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg-2); border:1px solid var(--line); border-radius:5px; font-size:12px; cursor:not-allowed; opacity:0.55">
+              <input type="radio" name="fmt" value="ogg" disabled> OGG Vorbis
+              <span class="tag" style="margin-left:auto">needs server</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px; padding:10px; background:var(--bg-2); border-radius:4px; font-size:11px; color:var(--fg-2); display:flex; gap:8px;">
+        <span style="color:var(--accent-hi); display:inline-flex">${icon('info')}</span>
+        <span>Only WAV works in-browser via OfflineAudioContext. MP3/FLAC/OGG require the backend encoder — see <code>ARCHITECTURE.md</code>.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="RhythmIn.closeModal()">Cancel</button>
+      <button class="btn primary" id="do-export">${icon('download')} Export WAV</button>
+    </div>
+  `;
+  const m = RhythmIn.openModal(body);
+  m.querySelector('#do-export').addEventListener('click', async () => {
+    const src = m.querySelector('input[name="src"]:checked').value;
+    const btn = m.querySelector('#do-export');
+    btn.textContent = 'Rendering…'; btn.disabled = true;
+    try {
+      let includeStems = null;
+      if (src === 'karaoke') includeStems = STEMS.filter(s => s.id !== 'vocals' && s.id !== 'lead').map(s => s.id);
+      const blob = await engine.exportMix({ includeStems, format: 'wav', sampleRate: 44100 });
+      downloadBlob(blob, `midnight-loop-${src}.wav`);
+      toast(`Exported ${(blob.size / 1024 / 1024).toFixed(2)} MB`, 'success');
+      RhythmIn.closeModal();
+    } catch (e) {
+      toast('Export failed: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Retry';
+    }
+  });
+}
+
+// Reset button
+document.getElementById('reset-btn').addEventListener('click', () => {
+  STEMS.forEach(s => {
+    engine.setVolume(s.id, 0.8);
+    engine.setPan(s.id, 0);
+    engine.setMute(s.id, false);
+    engine.setSolo(s.id, false);
+  });
+  stripsEl.querySelectorAll('[data-vol]').forEach(el => { el.value = 0.8; el.dispatchEvent(new Event('input')); });
+  stripsEl.querySelectorAll('[data-pan]').forEach(el => { el.value = 0; el.dispatchEvent(new Event('input')); });
+  stripsEl.querySelectorAll('.ctrl-btn.on-mute').forEach(el => el.classList.remove('on-mute'));
+  stripsEl.querySelectorAll('.ctrl-btn.on-solo').forEach(el => el.classList.remove('on-solo'));
+  stripsEl.querySelectorAll('.strip').forEach(el => el.classList.remove('muted','soloed'));
+  toast('Mixer reset');
+});
+
+// Add stem — placeholder
+document.getElementById('add-btn').addEventListener('click', () => {
+  toast('In demo, stems are fixed. Upload a new track to generate new stems.', 'info', 4000);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea')) return;
+  if (e.code === 'Space') { e.preventDefault(); playBtn.click(); }
+  if (e.code === 'Escape') stopBtn.click();
+  if (e.code === 'KeyL') loopBtn.click();
+});
+
+init();
+drawMasterWave();
+})();
+</script>
+</body>
+</html>

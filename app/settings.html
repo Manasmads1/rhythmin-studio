@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — RhythmIn</title>
+<link rel="stylesheet" href="../shared/rhythmin.css">
+<style>
+  .content-inner { padding: 32px 40px; max-width: 900px; margin: 0 auto; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.02em; font-weight: 600; }
+  .page-header p { color: var(--fg-2); margin: 0; font-size: 13px; }
+
+  .settings-nav {
+    display: flex; gap: 4px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .settings-nav a {
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--fg-2);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    transition: color 0.1s, border-color 0.1s;
+  }
+  .settings-nav a:hover { color: var(--fg-0); }
+  .settings-nav a.active { color: var(--accent-hi); border-bottom-color: var(--accent); }
+
+  .settings-block {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .sb-head { padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  .sb-head h3 { font-size: 13px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .sb-head p { font-size: 11px; color: var(--fg-3); margin: 3px 0 0; }
+  .sb-body { padding: 6px 20px; }
+
+  .setting-row {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    gap: 16px;
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .info h4 { font-size: 12px; margin: 0 0 3px; font-weight: 500; }
+  .setting-row .info p { font-size: 11px; color: var(--fg-3); margin: 0; line-height: 1.4; }
+  .setting-row .control { justify-self: end; display: flex; align-items: center; gap: 8px; }
+  .setting-row .control .select { width: 100%; min-width: 200px; }
+  .setting-row .control .input { width: 100%; min-width: 200px; }
+
+  .status-item {
+    padding: 10px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .status-item:last-child { margin-bottom: 0; }
+  .status-item .icon-box {
+    width: 32px; height: 32px;
+    background: var(--bg-3);
+    border-radius: 5px;
+    display: grid; place-items: center;
+    color: var(--fg-2);
+    flex-shrink: 0;
+  }
+  .status-item .icon-box svg { width: 14px; height: 14px; }
+  .status-item .info { flex: 1; }
+  .status-item .name { font-size: 12px; font-weight: 500; }
+  .status-item .detail { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-3); margin-top: 1px; }
+
+  .theme-preview {
+    display: flex; gap: 8px;
+  }
+  .theme-tile {
+    width: 90px; height: 60px;
+    border-radius: 5px;
+    border: 2px solid var(--line-strong);
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.12s;
+  }
+  .theme-tile.active { border-color: var(--accent); }
+  .theme-tile.dark  { background: #0f1114; }
+  .theme-tile.light { background: #f5f5f3; }
+  .theme-tile .swatches {
+    position: absolute;
+    bottom: 6px; left: 6px; right: 6px;
+    display: flex; gap: 3px;
+  }
+  .theme-tile .swatches span { flex: 1; height: 8px; border-radius: 2px; }
+  .theme-tile.dark .swatches span:nth-child(1) { background: #16191e; }
+  .theme-tile.dark .swatches span:nth-child(2) { background: #252a33; }
+  .theme-tile.dark .swatches span:nth-child(3) { background: #3b82f6; }
+  .theme-tile.light .swatches span:nth-child(1) { background: #ecedea; }
+  .theme-tile.light .swatches span:nth-child(2) { background: #d0d2ce; }
+  .theme-tile.light .swatches span:nth-child(3) { background: #2563eb; }
+  .theme-tile .name {
+    position: absolute; top: 6px; left: 8px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .theme-tile.dark .name { color: white; }
+  .theme-tile.light .name { color: #333; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="content-inner">
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>Configure audio engine, appearance, storage, and backend endpoints for your workspace.</p>
+      </div>
+
+      <div class="settings-nav">
+        <a class="active">General</a>
+        <a>Audio engine</a>
+        <a>Appearance</a>
+        <a>Storage</a>
+        <a>Backend</a>
+        <a>Keyboard</a>
+        <a>Account</a>
+      </div>
+
+      <!-- Appearance -->
+      <div class="settings-block">
+        <div class="sb-head">
+          <h3>Appearance</h3>
+          <p>Choose the theme applied across all studio surfaces.</p>
+        </div>
+        <div class="sb-body">
+          <div class="setting-row">
+            <div class="info">
+              <h4>Theme</h4>
+              <p>Applies immediately across the workspace and persists in local storage.</p>
+            </div>
+            <div class="control">
+              <div class="theme-preview">
+                <div class="theme-tile dark" id="theme-dark">
+                  <span class="name">Dark</span>
+                  <div class="swatches"><span></span><span></span><span></span></div>
+                </div>
+                <div class="theme-tile light" id="theme-light">
+                  <span class="name">Light</span>
+                  <div class="swatches"><span></span><span></span><span></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Accent color</h4>
+              <p>Used for playback indicators, primary actions, and selection.</p>
+            </div>
+            <div class="control">
+              <select class="select">
+                <option>Electric blue (default)</option>
+                <option>Cyan</option>
+                <option>Violet</option>
+                <option>Emerald</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Density</h4>
+              <p>How tightly panels and controls are packed.</p>
+            </div>
+            <div class="control">
+              <select class="select">
+                <option>Comfortable</option>
+                <option>Compact</option>
+                <option>Studio (extra dense)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audio Engine -->
+      <div class="settings-block">
+        <div class="sb-head">
+          <h3>Audio engine</h3>
+          <p>Configure the browser-side Web Audio context and playback quality.</p>
+        </div>
+        <div class="sb-body">
+          <div class="setting-row">
+            <div class="info">
+              <h4>Sample rate</h4>
+              <p>Higher rates improve fidelity but increase CPU load. 44.1 kHz is standard.</p>
+            </div>
+            <div class="control">
+              <select class="select">
+                <option>44100 Hz (recommended)</option>
+                <option>48000 Hz</option>
+                <option>96000 Hz</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Buffer size</h4>
+              <p>Smaller buffers reduce latency but risk audio glitches on slower machines.</p>
+            </div>
+            <div class="control">
+              <select class="select">
+                <option>256 samples · 5.8 ms</option>
+                <option>512 samples · 11.6 ms</option>
+                <option>1024 samples · 23.2 ms</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Master limiter</h4>
+              <p>Prevent output clipping. Recommended.</p>
+            </div>
+            <div class="control">
+              <div class="toggle on" id="tg-limiter"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Storage -->
+      <div class="settings-block">
+        <div class="sb-head">
+          <h3>Storage</h3>
+          <p>Where projects, stems, and exports are saved.</p>
+        </div>
+        <div class="sb-body">
+          <div class="setting-row">
+            <div class="info">
+              <h4>Backend</h4>
+              <p>Local browser storage during development. Object storage in production (S3-compatible).</p>
+            </div>
+            <div class="control">
+              <select class="select">
+                <option>Local (IndexedDB)</option>
+                <option>Cloudflare R2</option>
+                <option>S3-compatible</option>
+                <option>Google Cloud Storage</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Auto-cleanup temp files</h4>
+              <p>Delete intermediate processing artefacts after 24 hours.</p>
+            </div>
+            <div class="control">
+              <div class="toggle on"></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Storage usage</h4>
+              <p>421 MB used of 5 GB free tier · 12 projects · 48 stems</p>
+            </div>
+            <div class="control">
+              <button class="btn">Manage</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backend / Services -->
+      <div class="settings-block">
+        <div class="sb-head">
+          <h3>Backend services</h3>
+          <p>Endpoints for separation, arrangement, and encoding. Consult <code>ARCHITECTURE.md</code> for the API contract.</p>
+        </div>
+        <div class="sb-body">
+          <div class="setting-row">
+            <div class="info">
+              <h4>Separation API</h4>
+              <p>POST /api/separate · Demucs / Spleeter worker</p>
+            </div>
+            <div class="control">
+              <input class="input" placeholder="https://api.rhythmin.app" value="">
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Arrangement engine</h4>
+              <p>POST /api/arrangement · musical feature extraction &amp; reconstruction</p>
+            </div>
+            <div class="control">
+              <input class="input" placeholder="https://api.rhythmin.app" value="">
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="info">
+              <h4>Encoder service</h4>
+              <p>FFmpeg-backed encoder for MP3/FLAC/OGG output</p>
+            </div>
+            <div class="control">
+              <input class="input" placeholder="https://api.rhythmin.app" value="">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System status -->
+      <div class="settings-block">
+        <div class="sb-head">
+          <h3>System status</h3>
+          <p>Current runtime state of connected services and browser features.</p>
+        </div>
+        <div class="sb-body" style="padding-top: 14px; padding-bottom: 14px">
+          <div class="status-item">
+            <div class="icon-box"><span id="si1"></span></div>
+            <div class="info">
+              <div class="name">Web Audio API</div>
+              <div class="detail">AudioContext · 44100 Hz · 2ch</div>
+            </div>
+            <span class="tag good">ready</span>
+          </div>
+          <div class="status-item">
+            <div class="icon-box"><span id="si2"></span></div>
+            <div class="info">
+              <div class="name">Tone.js runtime</div>
+              <div class="detail">v15.0.4 · MonoSynth · MembraneSynth · MetalSynth</div>
+            </div>
+            <span class="tag good">loaded</span>
+          </div>
+          <div class="status-item">
+            <div class="icon-box"><span id="si3"></span></div>
+            <div class="info">
+              <div class="name">Separation worker</div>
+              <div class="detail">demo pipeline · production requires Demucs backend</div>
+            </div>
+            <span class="tag warn">demo</span>
+          </div>
+          <div class="status-item">
+            <div class="icon-box"><span id="si4"></span></div>
+            <div class="info">
+              <div class="name">FFmpeg encoder</div>
+              <div class="detail">not configured · WAV export works in-browser</div>
+            </div>
+            <span class="tag" style="color:var(--fg-3)">offline</span>
+          </div>
+          <div class="status-item">
+            <div class="icon-box"><span id="si5"></span></div>
+            <div class="info">
+              <div class="name">Arrangement engine</div>
+              <div class="detail">not configured · Rebuild uses simulated processing</div>
+            </div>
+            <span class="tag" style="color:var(--fg-3)">offline</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap: 8px; padding-bottom: 40px;">
+        <button class="btn">Discard changes</button>
+        <button class="btn primary">Save settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/rhythmin-ui.js"></script>
+<script>
+(function() {
+const { icon, mountShell, setTheme, getTheme, toast } = window.RhythmIn;
+mountShell({ activeId: 'settings', crumbs: ['Workspace', 'Settings'], showTransport: false });
+
+document.getElementById('si1').innerHTML = icon('wave');
+document.getElementById('si2').innerHTML = icon('keyboard');
+document.getElementById('si3').innerHTML = icon('layers');
+document.getElementById('si4').innerHTML = icon('download');
+document.getElementById('si5').innerHTML = icon('wand');
+
+// Theme tiles
+function setThemeActive() {
+  document.getElementById('theme-dark').classList.toggle('active', getTheme() === 'dark');
+  document.getElementById('theme-light').classList.toggle('active', getTheme() === 'light');
+}
+setThemeActive();
+document.getElementById('theme-dark').addEventListener('click', () => { setTheme('dark'); setThemeActive(); toast('Theme: Dark'); });
+document.getElementById('theme-light').addEventListener('click', () => { setTheme('light'); setThemeActive(); toast('Theme: Light'); });
+
+// Toggles
+document.querySelectorAll('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('on')));
+
+document.addEventListener('themechange', setThemeActive);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Separate — RhythmIn</title>
+<link rel="stylesheet" href="../shared/rhythmin.css">
+<style>
+  .content-inner { padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
+  .page-header { margin-bottom: 32px; }
+  .page-header h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.02em; font-weight: 600; }
+  .page-header p { color: var(--fg-2); margin: 0; font-size: 13px; }
+
+  .stage-wrap {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Drop zone */
+  .dropzone {
+    border: 1.5px dashed var(--line-strong);
+    border-radius: 8px;
+    background: var(--bg-1);
+    padding: 60px 40px;
+    text-align: center;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .dropzone .icon-wrap {
+    width: 56px; height: 56px;
+    margin: 0 auto 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    color: var(--accent-hi);
+  }
+  .dropzone .icon-wrap svg { width: 24px; height: 24px; }
+  .dropzone h3 { font-size: 18px; margin: 0 0 6px; font-weight: 500; }
+  .dropzone p { color: var(--fg-2); font-size: 12px; margin: 0 0 20px; }
+  .dropzone .formats {
+    display: flex; justify-content: center; gap: 8px; margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  /* Loaded file card */
+  .file-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px;
+    display: none;
+  }
+  .file-card.show { display: block; }
+  .file-card-head {
+    display: flex; align-items: center; gap: 14px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .file-card-head .fico {
+    width: 42px; height: 42px;
+    background: var(--bg-2);
+    border-radius: 6px;
+    display: grid; place-items: center;
+    color: var(--accent-hi);
+  }
+  .file-card-head .fname { font-size: 14px; font-weight: 500; margin: 0; }
+  .file-card-head .fmeta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+  .file-card-head .actions { margin-left: auto; display: flex; gap: 6px; }
+
+  .file-waveform {
+    height: 80px;
+    width: 100%;
+    background: var(--bg-2);
+    border-radius: 5px;
+    margin: 16px 0;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Options */
+  .option-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .option-block .label { display: block; margin-bottom: 8px; }
+  .stem-choices { display: flex; flex-direction: column; gap: 6px; }
+  .stem-choice {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--bg-2);
+    cursor: pointer;
+    transition: border-color 0.12s;
+  }
+  .stem-choice:hover { border-color: var(--line-strong); }
+  .stem-choice.active { border-color: var(--accent); background: var(--accent-soft); }
+  .stem-choice .checkbox {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--fg-3);
+    border-radius: 3px;
+    display: grid; place-items: center;
+    color: white;
+  }
+  .stem-choice.active .checkbox { background: var(--accent); border-color: var(--accent); }
+  .stem-choice .checkbox svg { width: 10px; height: 10px; opacity: 0; }
+  .stem-choice.active .checkbox svg { opacity: 1; }
+  .stem-choice .name { font-size: 12px; font-weight: 500; }
+  .stem-choice .desc { color: var(--fg-3); font-size: 10px; margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+
+  /* Pipeline panel (right) */
+  .pipeline-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px;
+    position: sticky; top: 76px;
+  }
+  .pipeline-panel h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-2);
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .pipeline-panel p { color: var(--fg-3); font-size: 11px; margin: 0 0 16px; }
+
+  .pipeline {
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .pipeline-step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    position: relative;
+  }
+  .pipeline-step .stage-mark {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--bg-2);
+    border: 1px solid var(--line-strong);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    z-index: 2;
+    color: var(--fg-3);
+  }
+  .pipeline-step .stage-mark svg { width: 12px; height: 12px; }
+  .pipeline-step .stage-mark .stagenum { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; }
+  .pipeline-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 10.5px; top: 32px; bottom: -10px;
+    width: 1px; background: var(--line-strong);
+    z-index: 1;
+  }
+  .pipeline-step .stage-info { flex: 1; min-width: 0; }
+  .pipeline-step .stage-name { font-size: 12px; font-weight: 500; color: var(--fg-1); }
+  .pipeline-step .stage-detail { font-size: 10px; color: var(--fg-3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+  .pipeline-step.done .stage-mark { background: var(--meter-low); border-color: var(--meter-low); color: white; }
+  .pipeline-step.active .stage-mark { background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 0 4px var(--accent-glow); }
+  .pipeline-step.active .stage-name { color: var(--fg-0); }
+  .pipeline-step.error .stage-mark { background: var(--meter-hi); border-color: var(--meter-hi); color: white; }
+
+  .pipeline-step .mini-progress {
+    height: 3px;
+    background: var(--bg-3);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .pipeline-step .mini-progress .fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.15s;
+  }
+
+  .job-summary {
+    padding: 14px 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-top: 20px;
+  }
+  .job-summary .row { justify-content: space-between; font-size: 11px; padding: 3px 0; }
+  .job-summary .row .k { color: var(--fg-3); }
+  .job-summary .row .v { font-family: 'JetBrains Mono', monospace; color: var(--fg-1); }
+
+  .demo-notice {
+    padding: 10px 12px;
+    border: 1px solid rgba(234,179,8,0.25);
+    background: rgba(234,179,8,0.08);
+    color: var(--meter-mid);
+    border-radius: 5px;
+    font-size: 11px;
+    display: flex; gap: 8px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .demo-notice svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  @media (max-width: 900px) {
+    .stage-wrap { grid-template-columns: 1fr; }
+    .option-grid { grid-template-columns: 1fr; }
+    .pipeline-panel { position: relative; top: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="content-inner">
+      <div class="page-header">
+        <h1>Separate audio into stems</h1>
+        <p>Upload a track, choose which stems to isolate, and RhythmIn will process it through the separation pipeline.</p>
+      </div>
+
+      <div class="demo-notice">
+        <span id="notice-ic"></span>
+        <div>
+          <strong>Demo mode active.</strong> Real separation requires Demucs/Spleeter running on a backend worker. The pipeline below shows exactly how a live job would progress — see <code>ARCHITECTURE.md</code> to connect production models.
+        </div>
+      </div>
+
+      <div class="stage-wrap">
+        <div class="col" style="gap: 20px">
+          <!-- Dropzone (initial state) -->
+          <div class="dropzone" id="dropzone">
+            <div class="icon-wrap"><span id="dz-icon"></span></div>
+            <h3>Drop an audio file to begin</h3>
+            <p>or click to browse · up to 100 MB</p>
+            <input type="file" id="file-input" accept="audio/*" style="display:none">
+            <button class="btn" id="browse-btn">Choose file</button>
+            <div class="formats">
+              <span class="tag">WAV</span>
+              <span class="tag">MP3</span>
+              <span class="tag">FLAC</span>
+              <span class="tag">OGG</span>
+              <span class="tag">M4A</span>
+            </div>
+          </div>
+
+          <!-- Loaded file card -->
+          <div class="file-card" id="file-card">
+            <div class="file-card-head">
+              <div class="fico"><span id="file-ic"></span></div>
+              <div>
+                <div class="fname" id="file-name">—</div>
+                <div class="fmeta" id="file-meta">—</div>
+              </div>
+              <div class="actions">
+                <button class="btn ghost" id="preview-play"><span id="preview-ic"></span> Preview</button>
+                <button class="btn ghost icon" id="clear-file" title="Remove"><span id="clear-ic"></span></button>
+              </div>
+            </div>
+
+            <canvas class="file-waveform" id="file-wave"></canvas>
+
+            <div class="option-grid">
+              <div class="option-block">
+                <span class="label">Stems to extract</span>
+                <div class="stem-choices" id="stem-choices">
+                  <div class="stem-choice active" data-stem="vocals">
+                    <div class="checkbox"><span class="check-ic"></span></div>
+                    <span class="name">Vocals</span>
+                    <span class="desc">MDX-Net</span>
+                  </div>
+                  <div class="stem-choice active" data-stem="drums">
+                    <div class="checkbox"><span class="check-ic"></span></div>
+                    <span class="name">Drums · Percussion</span>
+                    <span class="desc">Demucs v4</span>
+                  </div>
+                  <div class="stem-choice active" data-stem="bass">
+                    <div class="checkbox"><span class="check-ic"></span></div>
+                    <span class="name">Bass</span>
+                    <span class="desc">Demucs v4</span>
+                  </div>
+                  <div class="stem-choice active" data-stem="other">
+                    <div class="checkbox"><span class="check-ic"></span></div>
+                    <span class="name">Other instruments</span>
+                    <span class="desc">Demucs v4</span>
+                  </div>
+                  <div class="stem-choice" data-stem="guitar">
+                    <div class="checkbox"><span class="check-ic"></span></div>
+                    <span class="name">Guitar · Strings</span>
+                    <span class="desc">Experimental</span>
+                  </div>
+                  <div class="stem-choice" data-stem="keys">
+                    <div class="checkbox"><span class="check-ic"></span></div>
+                    <span class="name">Synth · Keys</span>
+                    <span class="desc">Experimental</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="option-block">
+                <span class="label">Processing options</span>
+                <div class="col" style="gap: 12px">
+                  <div>
+                    <span style="font-size:11px; color:var(--fg-2); display:block; margin-bottom:6px">Model</span>
+                    <select class="select" style="width:100%">
+                      <option>Demucs v4 htdemucs · balanced</option>
+                      <option>Demucs v4 htdemucs_ft · high quality</option>
+                      <option>MDX-Net · vocals only</option>
+                      <option>Spleeter 4-stem · fast</option>
+                    </select>
+                  </div>
+                  <div>
+                    <span style="font-size:11px; color:var(--fg-2); display:block; margin-bottom:6px">Output format</span>
+                    <select class="select" style="width:100%">
+                      <option>WAV · 44.1 kHz · 16-bit</option>
+                      <option>WAV · 48 kHz · 24-bit</option>
+                      <option>FLAC · lossless</option>
+                      <option>MP3 · 320 kbps</option>
+                    </select>
+                  </div>
+                  <label style="display:flex; align-items:center; justify-content:space-between; font-size:12px; padding-top:4px">
+                    <span>Preserve source loudness</span>
+                    <div class="toggle on" id="loudness-toggle"></div>
+                  </label>
+                  <label style="display:flex; align-items:center; justify-content:space-between; font-size:12px">
+                    <span>Two-pass refinement</span>
+                    <div class="toggle" id="refine-toggle"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn" id="cancel-btn" disabled>Cancel</button>
+              <button class="btn primary" id="start-btn"><span id="start-ic"></span> Start separation</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="pipeline-panel">
+            <h3>Pipeline</h3>
+            <p>Every stage runs asynchronously. Cancel or retry safely at any time.</p>
+
+            <div class="pipeline" id="pipeline">
+              <!-- steps injected -->
+            </div>
+
+            <div class="job-summary">
+              <div class="row"><span class="k">Job ID</span><span class="v" id="job-id">—</span></div>
+              <div class="row"><span class="k">Status</span><span class="v" id="job-status" style="color:var(--fg-3)">idle</span></div>
+              <div class="row"><span class="k">Elapsed</span><span class="v" id="job-elapsed">00:00</span></div>
+              <div class="row"><span class="k">Backend</span><span class="v" style="color:var(--meter-mid)">demo</span></div>
+            </div>
+
+            <div style="margin-top: 16px; display: none" id="done-actions">
+              <a href="mixer.html" class="btn primary lg" style="width:100%; justify-content:center">Open in mixer <span id="done-arrow"></span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/rhythmin-ui.js"></script>
+<script src="../shared/audio-engine.js"></script>
+<script>
+(function() {
+const { icon, mountShell, toast, fmtBytes, fmtTime } = window.RhythmIn;
+const { StemEngine, extractPeaks } = window.RhythmInAudio;
+
+mountShell({
+  activeId: 'upload',
+  crumbs: ['Workspace', 'Separate'],
+  showTransport: false
+});
+
+// Icons
+document.getElementById('dz-icon').innerHTML = icon('upload');
+document.getElementById('notice-ic').innerHTML = icon('info');
+document.getElementById('file-ic').innerHTML = icon('music');
+document.getElementById('preview-ic').innerHTML = icon('play');
+document.getElementById('clear-ic').innerHTML = icon('x');
+document.getElementById('start-ic').innerHTML = icon('sparkles');
+document.getElementById('done-arrow').innerHTML = icon('chevronRight');
+document.querySelectorAll('.check-ic').forEach(el => el.innerHTML = icon('check'));
+
+// Pipeline stages
+const STAGES = [
+  { id: 'validate',   name: 'File validation',       detail: 'Format check · size · integrity',   dur: 400 },
+  { id: 'decode',     name: 'Audio normalization',   detail: 'Decode · resample to 44.1 kHz',     dur: 800 },
+  { id: 'analyze',    name: 'Source analysis',       detail: 'Tempo · key · structure detection', dur: 1200 },
+  { id: 'separate',   name: 'Stem separation',       detail: 'Demucs v4 · 4-stem model',         dur: 3200 },
+  { id: 'refine',     name: 'Post-processing',       detail: 'Loudness match · spectral repair', dur: 1000 },
+  { id: 'render',     name: 'Rendering',             detail: 'Encoding to WAV',                   dur: 900 },
+];
+
+const pipelineEl = document.getElementById('pipeline');
+function renderPipeline(states = {}) {
+  pipelineEl.innerHTML = STAGES.map((s, i) => {
+    const state = states[s.id] || 'idle'; // idle | active | done | error
+    const stageMark = state === 'done' ? icon('check') : `<span class="stagenum">${String(i+1).padStart(2,'0')}</span>`;
+    return `
+      <div class="pipeline-step ${state}" data-step="${s.id}">
+        <div class="stage-mark">${stageMark}</div>
+        <div class="stage-info">
+          <div class="stage-name">${s.name}</div>
+          <div class="stage-detail">${s.detail}</div>
+          ${state === 'active' ? '<div class="mini-progress"><div class="fill" data-fill="'+s.id+'"></div></div>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+renderPipeline();
+
+// ---------- File handling ----------
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+const fileCard = document.getElementById('file-card');
+let loadedFile = null;
+let loadedBuffer = null;
+let previewAudioEl = null;
+
+['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); }));
+dropzone.addEventListener('drop', (e) => {
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+dropzone.addEventListener('click', () => fileInput.click());
+document.getElementById('browse-btn').addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+fileInput.addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (f) handleFile(f);
+});
+
+document.getElementById('clear-file').addEventListener('click', () => {
+  loadedFile = null;
+  loadedBuffer = null;
+  fileCard.classList.remove('show');
+  dropzone.style.display = 'block';
+  if (previewAudioEl) { previewAudioEl.pause(); previewAudioEl = null; }
+});
+
+async function handleFile(file) {
+  if (!file.type.startsWith('audio/') && !/\.(wav|mp3|flac|ogg|m4a|aac)$/i.test(file.name)) {
+    toast('Unsupported file type. Please upload an audio file.', 'error');
+    return;
+  }
+  if (file.size > 100 * 1024 * 1024) {
+    toast('File exceeds 100 MB limit.', 'error');
+    return;
+  }
+  loadedFile = file;
+  dropzone.style.display = 'none';
+  fileCard.classList.add('show');
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-meta').textContent = `${fmtBytes(file.size)} · ${(file.type || 'audio').replace('audio/','')}`;
+
+  // Decode and draw waveform
+  try {
+    const arr = await file.arrayBuffer();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    loadedBuffer = await ctx.decodeAudioData(arr);
+    const canvas = document.getElementById('file-wave');
+    const peaks = await extractPeaks(loadedBuffer, 400);
+    drawFullWaveform(canvas, peaks);
+    document.getElementById('file-meta').textContent = `${fmtBytes(file.size)} · ${loadedBuffer.duration.toFixed(2)}s · ${loadedBuffer.sampleRate} Hz · ${loadedBuffer.numberOfChannels}ch`;
+
+    // Preview element
+    if (previewAudioEl) previewAudioEl.pause();
+    previewAudioEl = new Audio(URL.createObjectURL(file));
+    previewAudioEl.addEventListener('ended', () => document.getElementById('preview-ic').innerHTML = icon('play'));
+  } catch (e) {
+    toast('Could not decode audio: ' + e.message, 'error');
+    console.error(e);
+  }
+}
+
+// Preload demo file button
+const demoBtn = document.createElement('button');
+demoBtn.className = 'btn ghost';
+demoBtn.style.marginLeft = '8px';
+demoBtn.textContent = 'Use demo audio';
+demoBtn.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const res = await fetch('../assets/stems/full-mix.wav');
+  const blob = await res.blob();
+  const file = new File([blob], 'demo-full-mix.wav', { type: 'audio/wav' });
+  handleFile(file);
+});
+document.getElementById('browse-btn').after(demoBtn);
+
+// Preview
+document.getElementById('preview-play').addEventListener('click', () => {
+  if (!previewAudioEl) return;
+  if (previewAudioEl.paused) {
+    previewAudioEl.play();
+    document.getElementById('preview-ic').innerHTML = icon('pause');
+  } else {
+    previewAudioEl.pause();
+    document.getElementById('preview-ic').innerHTML = icon('play');
+  }
+});
+
+function drawFullWaveform(canvas, peaks) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg-2').trim();
+  const barW = w / peaks.length;
+  for (let i = 0; i < peaks.length; i++) {
+    const barH = Math.max(1, peaks[i] * h * 0.9);
+    ctx.fillRect(i * barW, (h - barH) / 2, Math.max(1, barW - 1), barH);
+  }
+}
+
+// Stem choices
+document.getElementById('stem-choices').addEventListener('click', (e) => {
+  const choice = e.target.closest('.stem-choice');
+  if (choice) choice.classList.toggle('active');
+});
+
+// Toggles
+document.querySelectorAll('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('on')));
+
+// ---------- Start job ----------
+document.getElementById('start-btn').addEventListener('click', () => {
+  if (!loadedFile) {
+    toast('Please upload a file first', 'error');
+    return;
+  }
+  startJob();
+});
+
+let jobRunning = false;
+let jobStart = 0;
+let elapsedInterval = null;
+
+async function startJob() {
+  if (jobRunning) return;
+  jobRunning = true;
+  const states = {};
+  STAGES.forEach(s => states[s.id] = 'idle');
+  renderPipeline(states);
+  document.getElementById('done-actions').style.display = 'none';
+
+  const jobId = 'job_' + Math.random().toString(36).slice(2, 10);
+  document.getElementById('job-id').textContent = jobId;
+  document.getElementById('job-status').textContent = 'processing';
+  document.getElementById('job-status').style.color = 'var(--accent-hi)';
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('cancel-btn').disabled = false;
+
+  jobStart = performance.now();
+  elapsedInterval = setInterval(() => {
+    const el = (performance.now() - jobStart) / 1000;
+    document.getElementById('job-elapsed').textContent = fmtTime(el).slice(0, 5);
+  }, 100);
+
+  for (const s of STAGES) {
+    if (!jobRunning) break;
+    states[s.id] = 'active';
+    renderPipeline(states);
+    await animateStage(s, states);
+    states[s.id] = 'done';
+    renderPipeline(states);
+  }
+
+  if (jobRunning) {
+    document.getElementById('job-status').textContent = 'completed';
+    document.getElementById('job-status').style.color = 'var(--meter-low)';
+    document.getElementById('done-actions').style.display = 'block';
+    toast('Separation complete. Open mixer to review stems.', 'success', 5000);
+  }
+  clearInterval(elapsedInterval);
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('cancel-btn').disabled = true;
+  jobRunning = false;
+}
+
+function animateStage(stage, states) {
+  return new Promise((resolve) => {
+    const duration = stage.dur;
+    const start = performance.now();
+    const fillEl = pipelineEl.querySelector(`[data-fill="${stage.id}"]`);
+    const tick = () => {
+      if (!jobRunning) { resolve(); return; }
+      const t = performance.now() - start;
+      const p = Math.min(1, t / duration);
+      if (fillEl) fillEl.style.width = (p * 100) + '%';
+      if (p >= 1) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+document.getElementById('cancel-btn').addEventListener('click', () => {
+  jobRunning = false;
+  document.getElementById('job-status').textContent = 'cancelled';
+  document.getElementById('job-status').style.color = 'var(--meter-hi)';
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('cancel-btn').disabled = true;
+  clearInterval(elapsedInterval);
+  toast('Job cancelled', 'info');
+});
+</script>
+</body>
+</html>

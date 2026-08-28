@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — RhythmIn</title>
+<link rel="stylesheet" href="../shared/rhythmin.css">
+<style>
+  .content-inner { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .page-header .lead h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+  .page-header .lead p { color: var(--fg-2); margin: 0; font-size: 13px; }
+  .page-header .actions { display: flex; gap: 8px; }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stat .lbl { font-size: 10px; color: var(--fg-3); letter-spacing: 0.08em; text-transform: uppercase; }
+  .stat .val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 500; letter-spacing: -0.01em; }
+  .stat .delta { font-size: 11px; color: var(--fg-3); }
+  .stat .delta.up { color: var(--meter-low); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .filter-bar {
+    display: flex; gap: 8px; align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 16px;
+  }
+  .filter-tab {
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: var(--fg-2);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .filter-tab:hover { background: var(--bg-2); color: var(--fg-0); }
+  .filter-tab.active { background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--line-strong); }
+  .filter-tab .count { color: var(--fg-3); font-family: 'JetBrains Mono', monospace; font-size: 10px; margin-left: 4px; }
+  .filter-bar .search {
+    margin-left: auto;
+    position: relative;
+  }
+  .filter-bar .search .input { padding-left: 28px; width: 220px; }
+  .filter-bar .search::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 12px;
+    background: currentColor;
+    color: var(--fg-3);
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>") no-repeat center / contain;
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>") no-repeat center / contain;
+  }
+
+  .project-table {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .pt-header, .pt-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 120px 100px 140px 60px;
+    padding: 12px 16px;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+  }
+  .pt-header {
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--line);
+    font-size: 10px;
+    color: var(--fg-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .pt-row {
+    border-bottom: 1px solid var(--line);
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+  .pt-row:hover { background: var(--bg-2); }
+  .pt-row:last-child { border-bottom: none; }
+  .pt-name {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .pt-thumb {
+    width: 40px; height: 40px;
+    border-radius: 5px;
+    background: var(--bg-3);
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    overflow: hidden;
+  }
+  .pt-name .info { display: flex; flex-direction: column; gap: 2px; }
+  .pt-name .info .title { font-size: 13px; font-weight: 500; color: var(--fg-0); }
+  .pt-name .info .path { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-3); }
+  .pt-stems { display: flex; gap: 2px; }
+  .pt-stem-chip {
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 2px;
+    background: var(--bg-3);
+    color: var(--fg-2);
+    font-size: 9px;
+    font-weight: 600;
+    display: grid; place-items: center;
+    letter-spacing: 0.04em;
+  }
+
+  .side-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0;
+  }
+  .side-panel + .side-panel { margin-top: 16px; }
+  .sp-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sp-head .t { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); }
+  .sp-body { padding: 12px 16px; }
+
+  .activity-item {
+    display: flex; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-item .dot-icon {
+    width: 24px; height: 24px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    color: var(--accent-hi);
+  }
+  .activity-item .dot-icon svg { width: 12px; height: 12px; }
+  .activity-item .info { flex: 1; }
+  .activity-item .info .who { font-weight: 500; color: var(--fg-0); }
+  .activity-item .info .desc { color: var(--fg-2); }
+  .activity-item .info .when { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--fg-3); margin-top: 2px; }
+
+  .quick-actions .qa {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    border-radius: 5px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.12s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .quick-actions .qa:hover { border-color: var(--accent); }
+  .quick-actions .qa svg { width: 16px; height: 16px; color: var(--accent-hi); }
+  .quick-actions .qa .name { font-size: 12px; font-weight: 500; }
+  .quick-actions .qa .kbd { margin-left: auto; font-size: 10px; color: var(--fg-3); font-family: 'JetBrains Mono', monospace; padding: 1px 5px; background: var(--bg-3); border-radius: 3px; }
+
+  .empty-thumb-wave {
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(90deg, var(--accent) 0 1px, transparent 1px 3px);
+    opacity: 0.35;
+  }
+
+  @media (max-width: 1024px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .layout { grid-template-columns: 1fr; }
+    .pt-header, .pt-row { grid-template-columns: 1fr 100px 100px 60px; }
+    .pt-stems-col, .pt-owner-col, .pt-date-col { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="content-inner">
+      <div class="page-header">
+        <div class="lead">
+          <h1>Projects</h1>
+          <p>All separations, arrangements, and studio sessions for your workspace.</p>
+        </div>
+        <div class="actions">
+          <button class="btn"><span id="ic-import"></span> Import</button>
+          <a href="upload.html" class="btn primary"><span id="ic-plus"></span> New project</a>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <span class="lbl">Total projects</span>
+          <span class="val">12</span>
+          <span class="delta up">+3 this week</span>
+        </div>
+        <div class="stat">
+          <span class="lbl">Stems generated</span>
+          <span class="val">48</span>
+          <span class="delta">across 12 projects</span>
+        </div>
+        <div class="stat">
+          <span class="lbl">Storage used</span>
+          <span class="val">421<span style="color:var(--fg-3);font-size:14px"> MB</span></span>
+          <span class="delta">of 5 GB free tier</span>
+        </div>
+        <div class="stat">
+          <span class="lbl">Processing time</span>
+          <span class="val">7<span style="color:var(--fg-3);font-size:14px">h </span>21<span style="color:var(--fg-3);font-size:14px">m</span></span>
+          <span class="delta">this month</span>
+        </div>
+      </div>
+
+      <div class="layout">
+        <div>
+          <div class="filter-bar">
+            <div class="filter-tab active">All <span class="count">12</span></div>
+            <div class="filter-tab">Separations <span class="count">7</span></div>
+            <div class="filter-tab">Studio <span class="count">3</span></div>
+            <div class="filter-tab">Rebuilds <span class="count">2</span></div>
+            <div class="search">
+              <input class="input" placeholder="Search projects…">
+            </div>
+          </div>
+
+          <div class="project-table" id="proj-table">
+            <div class="pt-header">
+              <span>Name</span>
+              <span class="pt-owner-col">Type</span>
+              <span class="pt-stems-col">Stems</span>
+              <span>Length</span>
+              <span class="pt-date-col">Modified</span>
+              <span></span>
+            </div>
+            <!-- rows injected below -->
+          </div>
+        </div>
+
+        <div>
+          <div class="side-panel quick-actions">
+            <div class="sp-head"><span class="t">Quick actions</span></div>
+            <div class="sp-body">
+              <a href="upload.html" class="qa"><span id="qa-1"></span><span class="name">Separate a track</span><span class="kbd">S</span></a>
+              <a href="mixer.html" class="qa"><span id="qa-2"></span><span class="name">Open stem mixer</span><span class="kbd">M</span></a>
+              <a href="studio.html" class="qa"><span id="qa-3"></span><span class="name">Start studio session</span><span class="kbd">T</span></a>
+              <a href="rebuild.html" class="qa"><span id="qa-4"></span><span class="name">Rebuild instrumental</span><span class="kbd">R</span></a>
+            </div>
+          </div>
+
+          <div class="side-panel">
+            <div class="sp-head"><span class="t">Recent activity</span></div>
+            <div class="sp-body" id="activity-list"></div>
+          </div>
+
+          <div class="side-panel">
+            <div class="sp-head"><span class="t">System status</span></div>
+            <div class="sp-body">
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px">
+                <span style="color:var(--fg-2)">Web Audio</span>
+                <span style="color:var(--meter-low); display:flex; align-items:center; gap:6px"><span class="dot on"></span> Ready</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px">
+                <span style="color:var(--fg-2)">Separation worker</span>
+                <span style="color:var(--meter-mid)">Demo mode</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px">
+                <span style="color:var(--fg-2)">Storage backend</span>
+                <span style="color:var(--fg-1)">Local</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px">
+                <span style="color:var(--fg-2)">FFmpeg encoder</span>
+                <span style="color:var(--fg-3)">Not connected</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/rhythmin-ui.js"></script>
+<script>
+(function() {
+const { icon, mountShell, toast } = window.RhythmIn;
+mountShell({
+  activeId: 'dashboard',
+  crumbs: ['Workspace', 'Projects'],
+  showTransport: false
+});
+
+document.getElementById('ic-import').innerHTML = icon('upload');
+document.getElementById('ic-plus').innerHTML = icon('plus');
+document.getElementById('qa-1').innerHTML = icon('upload');
+document.getElementById('qa-2').innerHTML = icon('sliders');
+document.getElementById('qa-3').innerHTML = icon('layers');
+document.getElementById('qa-4').innerHTML = icon('wand');
+
+// Sample projects
+const projects = [
+  { name: 'Midnight Loop', path: '~/proj/midnight-loop', type: 'Separation', stems: ['DRUMS','BASS','KEYS','LEAD'], len: '00:32', modified: '2m ago', link: 'mixer.html' },
+  { name: 'Late Autumn Verse', path: '~/proj/late-autumn', type: 'Studio', stems: ['DRUMS','SYNTH','BASS','FX'], len: '02:14', modified: '18m ago', link: 'studio.html' },
+  { name: 'Karaoke — Coastline', path: '~/proj/coastline-kr', type: 'Rebuild', stems: ['DRUMS','KEYS','GTR','BASS'], len: '03:41', modified: '1h ago', link: 'rebuild.html' },
+  { name: 'Beat Sketch 04', path: '~/proj/beat-04', type: 'Studio', stems: ['DRUMS','BASS'], len: '00:48', modified: '3h ago', link: 'studio.html' },
+  { name: 'Session — Vocal Take', path: '~/proj/vocal-take-2', type: 'Separation', stems: ['VOX','INST'], len: '04:12', modified: 'Yesterday', link: 'mixer.html' },
+  { name: 'Rework of R. Peters', path: '~/proj/rework-rp', type: 'Rebuild', stems: ['DRUMS','KEYS','STRINGS'], len: '03:22', modified: '2 days ago', link: 'rebuild.html' },
+  { name: 'Demo — Full Mix', path: '~/proj/demo-fm', type: 'Separation', stems: ['DRUMS','BASS','KEYS','LEAD'], len: '00:08', modified: '3 days ago', link: 'mixer.html' },
+  { name: 'Live Set Reference', path: '~/proj/live-ref', type: 'Separation', stems: ['DRUMS','BASS','LEAD','FX'], len: '05:04', modified: 'Last week', link: 'mixer.html' },
+];
+
+const typeColors = { Separation: 'var(--accent-hi)', Studio: 'var(--violet)', Rebuild: '#22c55e' };
+
+const rowsHtml = projects.map((p, i) => `
+  <div class="pt-row" onclick="window.location.href='${p.link}'">
+    <div class="pt-name">
+      <div class="pt-thumb">
+        <svg viewBox="0 0 40 40" style="width:100%;height:100%">
+          ${Array.from({length: 12}, (_, j) => {
+            const h = 4 + Math.abs(Math.sin((i+1) * 0.7 + j * 0.6) + Math.sin(j * 0.4)) * 12;
+            return `<rect x="${j * 3 + 2}" y="${20 - h/2}" width="1.5" height="${h}" fill="${typeColors[p.type]}" opacity="0.75"/>`;
+          }).join('')}
+        </svg>
+      </div>
+      <div class="info">
+        <span class="title">${p.name}</span>
+        <span class="path">${p.path}</span>
+      </div>
+    </div>
+    <span class="pt-owner-col" style="color: ${typeColors[p.type]}; font-size: 11px; font-weight: 500;">${p.type}</span>
+    <div class="pt-stems pt-stems-col">
+      ${p.stems.slice(0,4).map(s => `<span class="pt-stem-chip">${s}</span>`).join('')}
+    </div>
+    <span class="mono" style="color:var(--fg-2)">${p.len}</span>
+    <span class="pt-date-col" style="color:var(--fg-3); font-size: 11px">${p.modified}</span>
+    <button class="btn icon ghost" onclick="event.stopPropagation()">${icon('more')}</button>
+  </div>
+`).join('');
+document.querySelector('#proj-table').insertAdjacentHTML('beforeend', rowsHtml);
+
+// Activity list
+const activity = [
+  { type: 'separate', who: 'You', desc: 'exported drums.wav from Midnight Loop', when: '2 min ago' },
+  { type: 'wand',     who: 'Rebuild engine', desc: 'completed Coastline arrangement', when: '1 hour ago' },
+  { type: 'layers',   who: 'You', desc: 'saved Beat Sketch 04', when: '3 hours ago' },
+  { type: 'upload',   who: 'You', desc: 'uploaded vocal-take-final.wav', when: 'Yesterday' },
+];
+document.getElementById('activity-list').innerHTML = activity.map(a => `
+  <div class="activity-item">
+    <div class="dot-icon">${icon(a.type === 'separate' ? 'download' : a.type === 'wand' ? 'wand' : a.type === 'layers' ? 'layers' : 'upload')}</div>
+    <div class="info">
+      <div><span class="who">${a.who}</span> <span class="desc">${a.desc}</span></div>
+      <div class="when">${a.when}</div>
+    </div>
+  </div>
+`).join('');
+})();
+</script>
+</body>
+</html>
