@@ -37,6 +37,11 @@ class StemEngine {
     if (!res.ok) throw new Error(`Failed to load ${url}`);
     const ab = await res.arrayBuffer();
     const buffer = await this.ctx.decodeAudioData(ab);
+    return this.addBuffer(id, buffer, meta);
+  }
+
+  addBuffer(id, buffer, meta = {}) {
+    if (!this.ctx) throw new Error('Audio engine is not initialized');
     if (buffer.duration > this.duration) this.duration = buffer.duration;
 
     const gain = this.ctx.createGain();

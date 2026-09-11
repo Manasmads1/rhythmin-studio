@@ -430,6 +430,7 @@ const fileCard = document.getElementById('file-card');
 let loadedFile = null;
 let loadedBuffer = null;
 let previewAudioEl = null;
+let previewObjectUrl = null;
 
 ['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); }));
 ['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); }));
@@ -449,7 +450,9 @@ document.getElementById('clear-file').addEventListener('click', () => {
   loadedBuffer = null;
   fileCard.classList.remove('show');
   dropzone.style.display = 'block';
-  if (previewAudioEl) { previewAudioEl.pause(); previewAudioEl = null; }
+  if (previewAudioEl) { previewAudioEl.pause(); previewAudioEl.src = ''; previewAudioEl = null; }
+  if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+  fileInput.value = '';
 });
 
 async function handleFile(file) {
@@ -462,6 +465,8 @@ async function handleFile(file) {
     return;
   }
   loadedFile = file;
+  if (previewAudioEl) { previewAudioEl.pause(); previewAudioEl.src = ''; previewAudioEl = null; }
+  if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
   dropzone.style.display = 'none';
   fileCard.classList.add('show');
   document.getElementById('file-name').textContent = file.name;
@@ -478,8 +483,8 @@ async function handleFile(file) {
     document.getElementById('file-meta').textContent = `${fmtBytes(file.size)} · ${loadedBuffer.duration.toFixed(2)}s · ${loadedBuffer.sampleRate} Hz · ${loadedBuffer.numberOfChannels}ch`;
 
     // Preview element
-    if (previewAudioEl) previewAudioEl.pause();
-    previewAudioEl = new Audio(URL.createObjectURL(file));
+    previewObjectUrl = URL.createObjectURL(file);
+    previewAudioEl = new Audio(previewObjectUrl);
     previewAudioEl.addEventListener('ended', () => document.getElementById('preview-ic').innerHTML = icon('play'));
   } catch (e) {
     toast('Could not decode audio: ' + e.message, 'error');

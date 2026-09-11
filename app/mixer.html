@@ -403,8 +403,25 @@ async function init() {
       await engine.addStem(s.id, s.url);
     }
   } catch (e) {
-    stripsEl.innerHTML = `<div style="padding:40px; text-align:center; color:var(--meter-hi)">Failed to load stems: ${e.message}</div>`;
-    return;
+    // Fresh GitHub clones intentionally keep generated demo WAVs out of git.
+    // Fall back to small in-memory tones so the mixer remains reviewable and playable.
+    await engine.init();
+    const sr = engine.ctx.sampleRate;
+    const length = Math.floor(sr * 8);
+    STEMS.forEach((s, index) => {
+      const buffer = engine.ctx.createBuffer(2, length, sr);
+      for (let channel = 0; channel < 2; channel++) {
+        const data = buffer.getChannelData(channel);
+        for (let i = 0; i < length; i++) {
+          const t = i / sr;
+          const pulse = Math.max(0, Math.sin(t * Math.PI * (index + 2) * 2)) ** 8;
+          const tone = Math.sin(t * (110 + index * 82) * Math.PI * 2) * 0.16;
+          data[i] = index === 0 ? pulse * 0.3 : tone * (0.55 + pulse * 0.45);
+        }
+      }
+      engine.addBuffer(s.id, buffer, { volume: 0.8, pan: 0 });
+    });
+    toast('Demo stems generated in-browser because sample assets are not bundled.', 'info', 5000);
   }
 
   // Build strips
