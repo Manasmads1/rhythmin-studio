@@ -1,83 +1,62 @@
-# RhythmIn
+# RhythmIN
 
 > Separate. Create. Rebuild.
 
-A browser-native audio workstation for stem separation, multi-track composition, and AI-assisted arrangement. Built on the Web Audio API + Tone.js, designed as the foundation for a serious open-source music technology product.
+RhythmIN is a browser-first music workspace for uploading audio, exploring stems, mixing tracks, playing instruments, and building arrangements. The UI is intentionally lightweight: Web Audio and Tone.js handle interaction in the browser, while the optional backend handles uploads, projects, jobs, and generated artifacts.
 
----
+## Current capabilities
 
-## What's in this repo
+| Capability | Status |
+|---|---|
+| Dark/light themes and responsive studio UI | Working |
+| Browser playback, waveform previews, mixer controls, meters | Working |
+| Drum machine and synth interactions | Working in browser |
+| WAV export | Working in browser |
+| Local FastAPI upload/job backend | Working starter scaffold |
+| Supabase persistence | Planned integration |
+| Real Demucs separation | Adapter documented; requires compatible worker runtime |
+| MP3/FLAC/OGG export | FFmpeg worker adapter planned |
 
-This is the **frontend prototype**. It runs entirely in the browser with no server dependencies — every playback path uses real Web Audio, every instrument is a real Tone.js voice, every waveform is real audio data.
+## Repository structure
 
-Anything that would normally require a backend (Demucs separation, MP3/FLAC/OGG encoding, cloud storage, the arrangement engine) is either implemented as a clearly-labelled demo layer or shown as a `needs server` disabled control. See `ARCHITECTURE.md` for the production contract.
-
-## Structure
-
+```text
+index.html                 Landing page
+app/                       Dashboard, upload, mixer, studio, rebuild, settings
+shared/                    CSS, UI helpers, audio engine, backend adapter
+backend/                   FastAPI starter service and backend documentation
+agents/                    Frontend, backend, QA, and platform notes
+assets/                    Small visual assets
+PLAN.md                    Product roadmap
+DESIGN.md                  Visual and UX system
+ARCHITECTURE.md            System architecture and boundaries
 ```
-index.html                    Landing page (interactive mini-mixer)
-app/
-  dashboard.html              Projects
-  upload.html                 Upload + separation pipeline
-  mixer.html                  Stem mixer — REAL Web Audio
-  studio.html                 Multi-track timeline + drum machine + synth — REAL Tone.js
-  rebuild.html                AI arrangement setup
-  settings.html               Preferences + backend config
-shared/
-  rhythmin.css                Design system (CSS variables, dark + light)
-  rhythmin-ui.js              Shared UI: sidebar, transport, toast, modal, formatters
-  audio-engine.js             StemEngine class + WAV encode/decode + peak extraction
-assets/
-  stems/                      Demo stems (drums, bass, keys, lead, full-mix) — synthesized WAVs
-ARCHITECTURE.md               Backend contract, deployment, service abstractions
-```
 
-## Run locally
-
-No build step — this is plain HTML/CSS/JS.
+## Run the frontend
 
 ```bash
-npx serve .
-# or
 python3 -m http.server 8000
 ```
 
-Open `http://localhost:8000`.
+Open `http://127.0.0.1:8000`.
 
-> Some browsers block audio autoplay until the first user interaction — click **Play** on the hero mini-mixer to unlock the AudioContext.
+## Run the starter backend
 
-## Keyboard shortcuts
+```bash
+cd backend
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8787
+```
 
-| Key | Action |
-|---|---|
-| `Space` | Play / pause |
-| `Esc` | Stop |
-| `L` | Toggle loop |
-| `A S D F G H J K` | Piano white keys (Studio) |
-| `W E T Y U O P` | Piano black keys (Studio) |
+Check `http://127.0.0.1:8787/api/health`. In RhythmIN, open Settings and set the Separation API to `http://127.0.0.1:8787`. The upload flow will then use the backend adapter. Clear the value to restore demo mode.
 
-## What's real vs. demo
+The starter processor copies the uploaded source into explicit demo stem outputs so the entire upload → job → mixer lifecycle can be tested without claiming real ML separation. A real Demucs/FFmpeg processor can be added behind the documented adapter later.
 
-See the table in `ARCHITECTURE.md` §9. Short version:
+## Free deployment direction
 
-- ✅ Mixer playback, per-stem controls, WAV export, meters, waveforms — all real Web Audio
-- ✅ Drum machine + synth — real Tone.js
-- 🟡 Separation & Rebuild pipelines — UI is real, processing is simulated
-- ❌ MP3 / FLAC / OGG export — disabled, needs FFmpeg backend
-
-## Moving to production
-
-Read `ARCHITECTURE.md`. TL;DR:
-1. Port the frontend to Vite + React + TypeScript
-2. Stand up a Node API gateway (Fastify/Hono)
-3. Add a Python worker with Demucs v4 for real separation
-4. Add an FFmpeg encoder worker for the missing formats
-5. Deploy: Cloudflare Pages (frontend) + Fly.io/Modal (workers) + R2 (storage) + Neon (Postgres)
-
-## License
-
-MIT.
+The planned free stack is Cloudflare Pages for the static frontend and Supabase for database, storage, and lightweight orchestration. Neither Pages Functions nor Supabase Edge Functions should run Demucs/PyTorch. Real separation requires a separate compatible Python worker; until one is configured, the product remains honest and usable in browser/demo mode.
 
 ## Responsible use
 
-RhythmIn processes audio you supply. Do not use it to bypass copyright, DRM, or paywalls. The Rebuild feature generates an original arrangement inspired by your reference — not a copy. Only upload material you have the right to work with.
+Only upload audio you own or have permission to process. RhythmIN is not intended to bypass DRM, paywalls, or copyright controls. See `PLAN.md`, `DESIGN.md`, `ARCHITECTURE.md`, and `backend/` for the full product and engineering record.

@@ -373,10 +373,12 @@
 
 <script src="../shared/rhythmin-ui.js"></script>
 <script src="../shared/audio-engine.js"></script>
+<script src="../shared/backend-api.js"></script>
 <script>
 (function() {
 const { icon, mountShell, toast, fmtBytes, fmtTime } = window.RhythmIn;
 const { StemEngine, extractPeaks } = window.RhythmInAudio;
+const backend = window.RhythmInBackend;
 
 mountShell({
   activeId: 'upload',
@@ -559,6 +561,9 @@ let elapsedInterval = null;
 
 async function startJob() {
   if (jobRunning) return;
+  if (backend.isConfigured()) {
+    return startRemoteJob();
+  }
   jobRunning = true;
   const states = {};
   STAGES.forEach(s => states[s.id] = 'idle');
@@ -599,6 +604,49 @@ async function startJob() {
   jobRunning = false;
 }
 
+async function startRemoteJob() {
+  jobRunning = true;
+  document.getElementById('done-actions').style.display = 'none';
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('cancel-btn').disabled = true;
+  document.getElementById('job-status').textContent = 'uploading';
+  document.getElementById('job-status').style.color = 'var(--accent-hi)';
+  try {
+    const selected = [...document.querySelectorAll('.stem-choice.active')].map(el => el.dataset.stem);
+    if (!selected.length) throw new Error('Select at least one stem');
+    const upload = await backend.upload(loadedFile, localStorage.getItem('rhythmin.session') || 'anonymous');
+    const created = await backend.separate({ fileId: upload.fileId, projectId: upload.projectId, stems: selected, model: 'demo', format: 'wav' });
+    document.getElementById('job-id').textContent = created.jobId;
+    document.getElementById('job-status').textContent = 'processing';
+    document.getElementById('cancel-btn').disabled = false;
+    const update = (job) => {
+      document.getElementById('job-status').textContent = job.status;
+      document.getElementById('job-status').style.color = job.status === 'completed' ? 'var(--meter-low)' : 'var(--accent-hi)';
+      document.getElementById('job-elapsed').textContent = `${Math.round(job.progress || 0)}%`;
+      if (job.status === 'completed') {
+        document.getElementById('done-actions').style.display = 'block';
+        toast('Backend job complete. Open the mixer to review the returned stems.', 'success', 5000);
+      }
+      if (job.status === 'failed' || job.status === 'cancelled') toast(job.error?.message || `Job ${job.status}`, 'error');
+    };
+    let remoteStream = backend.stream(created.jobId, update, () => {});
+    while (jobRunning) {
+      const current = await backend.job(created.jobId);
+      update(current);
+      if (['completed', 'failed', 'cancelled'].includes(current.status)) break;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    remoteStream?.close();
+  } catch (error) {
+    toast(`Backend unavailable: ${error.message}. Demo mode remains available.`, 'error', 6000);
+    document.getElementById('job-status').textContent = 'backend error';
+  } finally {
+    jobRunning = false;
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('cancel-btn').disabled = true;
+  }
+}
+
 function animateStage(stage, states) {
   return new Promise((resolve) => {
     const duration = stage.dur;
@@ -617,6 +665,7 @@ function animateStage(stage, states) {
 }
 
 document.getElementById('cancel-btn').addEventListener('click', () => {
+  if (backend.isConfigured() && document.getElementById('job-id').textContent !== '—') backend.cancel(document.getElementById('job-id').textContent).catch(() => {});
   jobRunning = false;
   document.getElementById('job-status').textContent = 'cancelled';
   document.getElementById('job-status').style.color = 'var(--meter-hi)';

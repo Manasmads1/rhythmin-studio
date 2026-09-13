@@ -648,3 +648,58 @@ body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity
 .mini-mixer, .panel, .strip, .workflow-card { position:relative; overflow:hidden; }
 @media (max-width:1024px) { .hero-art { right:2%; top:130px; opacity:.35; transform:scale(.8) rotate(8deg); } }
 @media (max-width:600px) { .hero-art { right:-80px; top:120px; transform:scale(.62) rotate(8deg); opacity:.25; } }
+
+
+/* ============================================================
+   RhythmIN Palette Refresh — Poseidon / Norse Blue / Burnt Pumpkin
+   Applied as a focused overlay so the existing component system stays stable.
+   ============================================================ */
+:root, [data-theme="dark"] {
+  --poseidon-50: #E8F3F5; --poseidon-100: #C9E4E9; --poseidon-200: #98CBD4;
+  --poseidon-300: #63ADBD; --poseidon-400: #31899D; --poseidon-500: #075C72;
+  --poseidon-600: #064E61; --poseidon-700: #043F4F; --poseidon-800: #032F3B;
+  --poseidon-900: #02232C; --poseidon-950: #01161C;
+  --norse-50: #EFF8FB; --norse-100: #D9EEF5; --norse-200: #B5DDEA;
+  --norse-300: #87C7DB; --norse-400: #63B0CE; --norse-500: #4FA3C5;
+  --norse-600: #318BAC; --norse-700: #26718C; --norse-800: #205C72;
+  --norse-900: #1D4C5E; --norse-950: #112F3B;
+  --pumpkin-50: #FFF2EC; --pumpkin-100: #FFE0D2; --pumpkin-200: #FFC0A6;
+  --pumpkin-300: #F58A64; --pumpkin-400: #E7663B; --pumpkin-500: #C93616;
+  --pumpkin-600: #AD2C12; --pumpkin-700: #8D2411; --pumpkin-800: #702016;
+  --pumpkin-900: #5A1C16; --pumpkin-950: #32100D;
+  --bg-0: #061116; --bg-1: #0A1B22; --bg-2: #102832; --bg-3: #173844; --bg-4: #245061;
+  --fg-0: #F2FAFB; --fg-1: #CBE0E5; --fg-2: #91B1BA; --fg-3: #64838C; --fg-4: #3A5A64;
+  --line: rgba(151, 210, 222, .12); --line-strong: rgba(151, 210, 222, .22);
+  --overlay: rgba(1, 22, 28, .72); --accent: var(--norse-500); --accent-hi: #8ED0E2;
+  --accent-lo: var(--poseidon-700); --accent-glow: rgba(79, 163, 197, .38); --accent-soft: rgba(79, 163, 197, .14);
+  --violet: #9C89D9; --meter-low: #5FD39B; --meter-mid: #F5BE62; --meter-hi: var(--pumpkin-400);
+  --shadow-1: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 38px rgba(1,22,28,.42);
+  --shadow-hi: 0 0 0 1px var(--accent-glow), 0 0 32px var(--accent-glow);
+}
+[data-theme="light"] {
+  --bg-0: #F4FAFB; --bg-1: #E8F3F5; --bg-2: #FFFFFF; --bg-3: #F7FBFC; --bg-4: #D3E5E9;
+  --fg-0: #08202A; --fg-1: #173E4A; --fg-2: #3E6975; --fg-3: #64838C; --fg-4: #98B2B9;
+  --line: rgba(2, 47, 59, .12); --line-strong: rgba(2, 47, 59, .22); --overlay: rgba(244,250,251,.82);
+  --accent: var(--poseidon-600); --accent-hi: var(--poseidon-500); --accent-lo: var(--poseidon-700);
+  --accent-glow: rgba(6, 78, 97, .24); --accent-soft: rgba(6, 78, 97, .09);
+  --shadow-1: 0 1px 2px rgba(2,47,59,.08), 0 16px 32px rgba(2,47,59,.10);
+}
+
+/* Tactile controls and gentle motion graphics */
+.glass, .panel, .mini-mixer, .settings-block, .modal, .transport {
+  background: color-mix(in srgb, var(--bg-2) 76%, transparent);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-1); border-color: var(--line-strong);
+}
+.btn, .btn-sm, .toggle, .pad, .transport button { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.btn:hover, .btn-sm:hover, .transport button:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(1,22,28,.18); }
+.btn:active, .btn-sm:active, .transport button:active { transform: translateY(1px) scale(.98); }
+.sidebar-brand .logo, .hero-eyebrow .dot { background: linear-gradient(135deg, var(--norse-400), var(--pumpkin-500)); }
+.hero h1 .accent { color: var(--pumpkin-400); text-shadow: 0 0 28px rgba(201,54,22,.18); }
+.hero-art, .hero-orb { animation: rhythmin-float 9s ease-in-out infinite; transform-style: preserve-3d; }
+.hero-art::before { content: ''; position: absolute; inset: 20%; border: 1px solid rgba(142,208,226,.45); border-radius: 32% 68% 58% 42%; transform: rotateX(62deg) rotateZ(18deg); animation: rhythmin-orbit 14s linear infinite; }
+.mini-mixer { transform: perspective(1100px) rotateX(1.5deg); }
+.mini-mixer:hover { transform: perspective(1100px) rotateX(0deg) translateY(-4px); }
+@keyframes rhythmin-float { 0%,100% { transform: translate3d(0,0,0) rotate(8deg); } 50% { transform: translate3d(0,-12px,18px) rotate(12deg); } }
+@keyframes rhythmin-orbit { to { transform: rotateX(62deg) rotateZ(378deg); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

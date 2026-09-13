@@ -286,7 +286,7 @@
               <p>POST /api/separate · Demucs / Spleeter worker</p>
             </div>
             <div class="control">
-              <input class="input" placeholder="https://api.rhythmin.app" value="">
+              <input class="input" id="backend-url" placeholder="http://127.0.0.1:8787" value="">
             </div>
           </div>
           <div class="setting-row">
@@ -369,6 +369,7 @@
 </div>
 
 <script src="../shared/rhythmin-ui.js"></script>
+<script src="../shared/backend-api.js"></script>
 <script>
 (function() {
 const { icon, mountShell, setTheme, getTheme, toast } = window.RhythmIn;
@@ -393,6 +394,15 @@ document.getElementById('theme-light').addEventListener('click', () => { setThem
 document.querySelectorAll('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('on')));
 
 document.addEventListener('themechange', setThemeActive);
+
+const backendUrl = document.getElementById('backend-url');
+backendUrl.value = localStorage.getItem(window.RhythmInBackend.KEY) || '';
+backendUrl.addEventListener('change', () => {
+  const value = backendUrl.value.trim().replace(/\/$/, '');
+  if (value) localStorage.setItem(window.RhythmInBackend.KEY, value);
+  else localStorage.removeItem(window.RhythmInBackend.KEY);
+  toast(value ? 'Backend endpoint saved' : 'Demo mode restored');
+});
 })();
 </script>
 </body>
