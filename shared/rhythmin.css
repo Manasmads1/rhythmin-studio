@@ -703,3 +703,38 @@ body::before { content:""; position:fixed; inset:0; pointer-events:none; opacity
 @keyframes rhythmin-float { 0%,100% { transform: translate3d(0,0,0) rotate(8deg); } 50% { transform: translate3d(0,-12px,18px) rotate(12deg); } }
 @keyframes rhythmin-orbit { to { transform: rotateX(62deg) rotateZ(378deg); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+
+/* Final contrast and surface correction */
+html, body { min-height: 100%; background: var(--bg-0); }
+.app { min-height: 100vh; }
+.main { background: var(--bg-0); isolation: isolate; }
+.topbar, .sidebar, .transport { position: relative; z-index: 2; }
+.content-inner { position: relative; z-index: 1; }
+.page-header h1, .page-header p { position: relative; z-index: 1; }
+.dropzone, .file-card, .pipeline-panel, .settings-block, .panel, .workflow-card, .strip { color: var(--fg-0); }
+.dropzone { background: color-mix(in srgb, var(--bg-1) 94%, var(--accent-soft)); border-color: var(--line-strong); }
+.pipeline-panel, .file-card, .settings-block, .panel, .workflow-card, .strip { background: color-mix(in srgb, var(--bg-1) 92%, transparent); }
+.dropzone .icon-wrap, .file-waveform, .job-summary, .stem-choice, .input, .select { background: var(--bg-2); color: var(--fg-0); }
+.dropzone h3, .file-card-head .fname, .stem-choice .name, .pipeline-step .stage-name { color: var(--fg-0); }
+.dropzone p, .page-header p, .pipeline-panel p { color: var(--fg-1); }
+.demo-notice { background: color-mix(in srgb, var(--pumpkin-500) 12%, var(--bg-1)); border-color: color-mix(in srgb, var(--pumpkin-400) 45%, transparent); color: color-mix(in srgb, var(--pumpkin-300) 88%, var(--fg-0)); }
+.tag { background: color-mix(in srgb, var(--bg-2) 86%, var(--accent-soft)); border: 1px solid var(--line-strong); color: var(--fg-1); }
+
+[data-theme="light"] .main { background: #F4FAFB; }
+[data-theme="light"] .topbar { background: rgba(255,255,255,.94); border-bottom-color: rgba(2,47,59,.16); }
+[data-theme="light"] .sidebar { background: #E8F3F5; border-right-color: rgba(2,47,59,.16); }
+[data-theme="light"] .transport { background: rgba(255,255,255,.96); }
+[data-theme="light"] .dropzone, [data-theme="light"] .file-card, [data-theme="light"] .pipeline-panel, [data-theme="light"] .settings-block, [data-theme="light"] .panel, [data-theme="light"] .workflow-card, [data-theme="light"] .strip { background: rgba(255,255,255,.96); border-color: rgba(2,47,59,.18); box-shadow: 0 14px 34px rgba(2,47,59,.10); }
+[data-theme="light"] .dropzone .icon-wrap, [data-theme="light"] .file-waveform, [data-theme="light"] .job-summary, [data-theme="light"] .stem-choice, [data-theme="light"] .input, [data-theme="light"] .select { background: #F4FAFB; border-color: rgba(2,47,59,.18); }
+[data-theme="light"] .dropzone h3, [data-theme="light"] .file-card-head .fname, [data-theme="light"] .stem-choice .name, [data-theme="light"] .pipeline-step .stage-name { color: #08202A; }
+[data-theme="light"] .dropzone p, [data-theme="light"] .page-header p, [data-theme="light"] .pipeline-panel p { color: #315965; }
+[data-theme="light"] .demo-notice { background: #FFF2EC; color: #702016; border-color: #E7663B; }
+[data-theme="light"] .tag { background: #FFFFFF; color: #205C72; border-color: #98CBD4; }
+[data-theme="light"] .btn.primary { color: #FFFFFF; background: #064E61; }
+[data-theme="light"] .btn:not(.primary), [data-theme="light"] .transport-btn { color: #173E4A; }
+
+@media (max-width: 900px) {
+  .content-inner { padding: 24px 20px; }
+  .page-header { margin-bottom: 24px; }
+}

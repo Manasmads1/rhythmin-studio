@@ -54,7 +54,9 @@ const ICONS = {
 function icon(name) { return ICONS[name] || ''; }
 
 // ---------- Theme ----------
-const THEME_KEY = 'rhythmin.theme';
+// Versioned preference prevents an older prototype setting from forcing a washed-out light mode.
+// Dark is the intentional first-run default; light mode remains fully switchable from the shell/settings.
+const THEME_KEY = 'rhythmin.theme.v2';
 function getTheme() {
   return localStorage.getItem(THEME_KEY) || 'dark';
 }
